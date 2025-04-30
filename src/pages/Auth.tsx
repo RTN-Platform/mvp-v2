@@ -1,6 +1,5 @@
-
-import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -31,6 +30,17 @@ const Auth: React.FC = () => {
   const { user, signIn, signUp, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("login");
+  const location = useLocation();
+
+  // Handle auth redirects with URL hash fragments
+  useEffect(() => {
+    // Check if there's a hash fragment in the URL (from Supabase auth redirect)
+    if (location.hash && (location.hash.includes("access_token") || location.hash.includes("error"))) {
+      console.log("Auth redirect detected with hash fragment");
+      // The Supabase client will automatically handle this
+      // No need to manually process the token as supabase.auth.onAuthStateChange will handle it
+    }
+  }, [location]);
 
   // Form for login
   const loginForm = useForm<z.infer<typeof loginSchema>>({

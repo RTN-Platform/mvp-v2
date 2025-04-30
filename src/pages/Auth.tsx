@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { MapPin, Mail, Key, User } from "lucide-react";
+import { Facebook, Apple } from "lucide-react";
 
 // Login form schema
 const loginSchema = z.object({
@@ -27,7 +28,7 @@ const registerSchema = z.object({
 });
 
 const Auth: React.FC = () => {
-  const { user, signIn, signUp, googleSignIn } = useAuth();
+  const { user, signIn, signUp, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("login");
 
@@ -79,6 +80,24 @@ const Auth: React.FC = () => {
     setIsLoading(true);
     try {
       await googleSignIn();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await facebookSignIn();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await appleSignIn();
     } finally {
       setIsLoading(false);
     }
@@ -233,6 +252,26 @@ const Auth: React.FC = () => {
                   alt="Google logo" 
                 />
                 Google
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="w-full bg-[#1877F2] text-white hover:bg-[#166FE5]" 
+                onClick={handleFacebookSignIn}
+                disabled={isLoading}
+              >
+                <Facebook className="h-5 w-5 mr-2" />
+                Facebook
+              </Button>
+
+              <Button 
+                variant="outline" 
+                className="w-full bg-black text-white hover:bg-gray-800" 
+                onClick={handleAppleSignIn}
+                disabled={isLoading}
+              >
+                <Apple className="h-5 w-5 mr-2" />
+                Apple
               </Button>
             </CardFooter>
           </Tabs>

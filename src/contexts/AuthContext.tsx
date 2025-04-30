@@ -19,6 +19,8 @@ type AuthContextType = {
   }>;
   signOut: () => Promise<void>;
   googleSignIn: () => Promise<void>;
+  facebookSignIn: () => Promise<void>;
+  appleSignIn: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,10 +132,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const googleSignIn = async () => {
+  const handleOAuthSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider,
         options: {
           redirectTo: window.location.origin,
         },
@@ -143,11 +145,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Google sign-in failed",
-        description: error.message || "Could not sign in with Google. Please try again.",
+        title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in failed`,
+        description: error.message || `Could not sign in with ${provider}. Please try again.`,
       });
     }
   };
+
+  const googleSignIn = () => handleOAuthSignIn('google');
+  const facebookSignIn = () => handleOAuthSignIn('facebook');
+  const appleSignIn = () => handleOAuthSignIn('apple');
 
   return (
     <AuthContext.Provider
@@ -160,6 +166,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signOut,
         googleSignIn,
+        facebookSignIn,
+        appleSignIn,
       }}
     >
       {children}

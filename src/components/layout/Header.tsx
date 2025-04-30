@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, User, LogOut } from "lucide-react";
+import { Search, User, LogOut, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Header: React.FC = () => {

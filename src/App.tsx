@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Tribe from "./pages/Tribe";
 import Experiences from "./pages/Experiences";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/tribe" element={<Tribe />} />
           <Route path="/experiences" element={<Experiences />} />
           <Route path="*" element={<NotFound />} />

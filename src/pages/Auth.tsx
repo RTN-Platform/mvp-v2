@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -10,8 +11,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
-import { MapPin, Mail, Key, User } from "lucide-react";
+import { MapPin, Mail, Key, User, AlertCircle, CheckCircle } from "lucide-react";
 import { Facebook, Apple } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Login form schema
 const loginSchema = z.object({
@@ -26,11 +31,26 @@ const registerSchema = z.object({
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
 });
 
+// Reset password form schema
+const resetPasswordSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+});
+
 const Auth: React.FC = () => {
   const { user, signIn, signUp, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("login");
   const location = useLocation();
+  const { toast } = useToast();
+  
+  // State for registration success message
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  
+  // State for reset password dialog
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
 
   // Handle auth redirects with URL hash fragments
   useEffect(() => {
@@ -60,6 +80,14 @@ const Auth: React.FC = () => {
       fullName: "",
     },
   });
+  
+  // Form for reset password
+  const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
 
   // If user is already logged in, redirect to home
   if (user) {
@@ -77,12 +105,70 @@ const Auth: React.FC = () => {
 
   const onRegisterSubmit = async (data: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
+    setRegistrationError(null);
+    setRegistrationSuccess(false);
+    
     try {
-      await signUp(data.email, data.password, {
+      // Check if email already exists
+      const { data: existingUsers, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle();
+      
+      if (checkError) {
+        throw checkError;
+      }
+      
+      if (existingUsers) {
+        setRegistrationError("This email address is already registered. Please log in or use the password reset option if you've forgotten your login details.");
+        return;
+      }
+      
+      const result = await signUp(data.email, data.password, {
         full_name: data.fullName,
       });
+      
+      if (!result.error) {
+        setRegistrationSuccess(true);
+        registerForm.reset();
+      }
+    } catch (error: any) {
+      if (error.message?.includes('already registered')) {
+        setRegistrationError("This email address is already registered. Please log in or use the password reset option if you've forgotten your login details.");
+      } else {
+        setRegistrationError(error.message || "An error occurred during registration. Please try again.");
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const onResetPasswordSubmit = async (data: z.infer<typeof resetPasswordSchema>) => {
+    setResetPasswordLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      setResetPasswordSuccess(true);
+      resetPasswordForm.reset();
+      
+      setTimeout(() => {
+        setResetPasswordOpen(false);
+        setResetPasswordSuccess(false);
+      }, 5000);
+      
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to send password reset instructions. Please try again.",
+      });
+    } finally {
+      setResetPasswordLoading(false);
     }
   };
 
@@ -173,6 +259,16 @@ const Auth: React.FC = () => {
                     >
                       {isLoading ? "Signing in..." : "Sign In"}
                     </Button>
+                    
+                    <div className="text-center">
+                      <button 
+                        type="button" 
+                        onClick={() => setResetPasswordOpen(true)} 
+                        className="text-sm text-nature-600 hover:text-nature-800 hover:underline"
+                      >
+                        Forgotten login details?
+                      </button>
+                    </div>
                   </form>
                 </Form>
               </TabsContent>
@@ -228,6 +324,25 @@ const Auth: React.FC = () => {
                         </FormItem>
                       )}
                     />
+                    
+                    {registrationSuccess && (
+                      <Alert className="bg-green-50 text-green-800 border-green-200 mb-4">
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          After registering, please check your email for a confirmation link to complete your account setup.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {registrationError && (
+                      <Alert className="bg-red-50 text-red-800 border-red-200 mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          {registrationError}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
                     <Button 
                       type="submit" 
                       className="w-full bg-nature-600 hover:bg-nature-700"
@@ -287,6 +402,58 @@ const Auth: React.FC = () => {
           </Tabs>
         </Card>
       </div>
+      
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you instructions to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...resetPasswordForm}>
+            <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4 py-4">
+              <FormField
+                control={resetPasswordForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
+                        <Input className="pl-10" placeholder="your@email.com" {...field} />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {resetPasswordSuccess && (
+                <Alert className="bg-green-50 text-green-800 border-green-200 mb-4">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Password reset instructions have been sent to your email address.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  className="bg-nature-600 hover:bg-nature-700"
+                  disabled={resetPasswordLoading}
+                >
+                  {resetPasswordLoading ? "Sending..." : "Send Instructions"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

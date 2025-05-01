@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, User, LogOut, Edit } from "lucide-react";
+import { Search, User, LogOut, Edit, Heart, MessageSquare, Bell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Header: React.FC = () => {
@@ -54,6 +54,20 @@ const Header: React.FC = () => {
           </button>
         </nav>
 
+        {user && (
+          <div className="hidden md:flex items-center space-x-6">
+            <Link to="/wishlist" className="text-nature-600 hover:text-nature-700">
+              <Heart size={20} />
+            </Link>
+            <Link to="/messages" className="text-nature-600 hover:text-nature-700">
+              <MessageSquare size={20} />
+            </Link>
+            <Link to="/notifications" className="text-nature-600 hover:text-nature-700">
+              <Bell size={20} />
+            </Link>
+          </div>
+        )}
+
         <div>
           {user ? (
             <DropdownMenu>
@@ -80,6 +94,24 @@ const Header: React.FC = () => {
                   <Link to="/edit-profile" className="w-full cursor-pointer">
                     <Edit className="mr-2 h-4 w-4" />
                     <span>Edit Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/wishlist" className="w-full cursor-pointer md:hidden">
+                    <Heart className="mr-2 h-4 w-4" />
+                    <span>Wishlist</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/messages" className="w-full cursor-pointer md:hidden">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <span>Messages</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/notifications" className="w-full cursor-pointer md:hidden">
+                    <Bell className="mr-2 h-4 w-4" />
+                    <span>Notifications</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

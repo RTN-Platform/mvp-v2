@@ -12,11 +12,14 @@ import ResetPassword from "./pages/ResetPassword";
 import Tribe from "./pages/Tribe";
 import Experiences from "./pages/Experiences";
 import NotFound from "./pages/NotFound";
+import Messages from "./pages/Messages";
+import Notifications from "./pages/Notifications";
+import Wishlist from "./pages/Wishlist";
+import CreateUpdate from "./pages/CreateUpdate";
+import BecomeHost from "./pages/BecomeHost";
 
 const queryClient = new QueryClient();
 
-// The issue is that TooltipProvider was causing a React hook error
-// Removing the TooltipProvider since it's not properly configured
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -31,6 +34,11 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/tribe" element={<Tribe />} />
           <Route path="/experiences" element={<Experiences />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/create-update" element={<CreateUpdate />} />
+          <Route path="/become-host" element={<BecomeHost />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

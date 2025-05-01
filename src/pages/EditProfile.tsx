@@ -14,7 +14,8 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin, User, Link, Edit } from "lucide-react";
+import { MapPin, User, Edit, Hash } from "lucide-react";
+import { interestsSchema } from "@/schemas/authSchemas";
 
 // Profile form schema
 const profileSchema = z.object({
@@ -22,7 +23,8 @@ const profileSchema = z.object({
   full_name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   location: z.string().optional(),
   bio: z.string().max(250, { message: "Bio must be 250 characters or less" }).optional(),
-  website: z.string().url({ message: "Please enter a valid URL" }).optional().or(z.literal('')),
+  interests: interestsSchema,
+  is_host: z.boolean().default(false),
 });
 
 const EditProfile: React.FC = () => {
@@ -30,6 +32,7 @@ const EditProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [interestInput, setInterestInput] = useState("");
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -39,7 +42,8 @@ const EditProfile: React.FC = () => {
       full_name: "",
       location: "",
       bio: "",
-      website: "",
+      interests: [],
+      is_host: false,
     },
   });
 
@@ -58,7 +62,8 @@ const EditProfile: React.FC = () => {
         full_name: profile.full_name || "",
         location: profile.location || "",
         bio: profile.bio || "",
-        website: profile.website || "",
+        interests: profile.interests || [],
+        is_host: false, // Default to false until we add this field to the profile table
       });
       
       if (profile.avatar_url) {
@@ -80,6 +85,28 @@ const EditProfile: React.FC = () => {
     }
   };
 
+  const addInterest = () => {
+    if (interestInput.trim() && !interestInput.includes(' ')) {
+      const currentInterests = form.getValues('interests') || [];
+      if (!currentInterests.includes(interestInput.trim())) {
+        form.setValue('interests', [...currentInterests, interestInput.trim()]);
+        setInterestInput("");
+      }
+    }
+  };
+
+  const removeInterest = (interest: string) => {
+    const currentInterests = form.getValues('interests') || [];
+    form.setValue('interests', currentInterests.filter(i => i !== interest));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addInterest();
+    }
+  };
+
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
     if (!user) return;
     
@@ -91,13 +118,7 @@ const EditProfile: React.FC = () => {
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
         const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
-        
-        // Create storage bucket if it doesn't exist
-        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('avatars');
-        if (bucketError && bucketError.message.includes('does not exist')) {
-          await supabase.storage.createBucket('avatars', { public: true });
-        }
+        const filePath = `${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('avatars')
@@ -122,7 +143,7 @@ const EditProfile: React.FC = () => {
           full_name: data.full_name,
           location: data.location || null,
           bio: data.bio || null,
-          website: data.website || null,
+          interests: data.interests || [],
           avatar_url: newAvatarUrl,
           updated_at: new Date().toISOString(),
         });
@@ -258,20 +279,68 @@ const EditProfile: React.FC = () => {
                   
                   <FormField
                     control={form.control}
-                    name="website"
+                    name="interests"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
-                            <Input className="pl-10" placeholder="https://example.com" {...field} />
+                        <FormLabel>Interests</FormLabel>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="relative flex-grow">
+                              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
+                              <Input
+                                placeholder="Add interests (e.g. hiking, beaches)"
+                                className="pl-10"
+                                value={interestInput}
+                                onChange={(e) => setInterestInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                              />
+                            </div>
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              onClick={addInterest}
+                            >
+                              Add
+                            </Button>
                           </div>
-                        </FormControl>
+                          
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {field.value?.map((interest, index) => (
+                              <span 
+                                key={index} 
+                                className="bg-nature-100 text-nature-800 px-3 py-1 rounded-full text-sm flex items-center"
+                              >
+                                #{interest}
+                                <button 
+                                  type="button" 
+                                  className="ml-2 text-nature-500 hover:text-nature-700"
+                                  onClick={() => removeInterest(interest)}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <div className="bg-nature-50 p-4 rounded-lg mt-6 border border-nature-100">
+                    <h3 className="font-medium text-nature-800 mb-2">Are you a host of an experience or venue?</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Share your experience or venue with our community and start welcoming guests.
+                    </p>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="bg-white border-nature-300 hover:bg-nature-50"
+                      onClick={() => navigate("/become-host")}
+                    >
+                      Become a Host
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
               

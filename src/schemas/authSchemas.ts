@@ -21,3 +21,17 @@ export const resetPasswordSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
+// New schema for profile interests
+export const interestsSchema = z.array(
+  z.string().min(1).max(30)
+).optional().default([]);
+
+// New schemas for host information
+export const hostSchema = z.object({
+  isHost: z.boolean().default(false),
+  venueName: z.string().optional(),
+  venueType: z.string().optional(),
+  venueLocation: z.string().optional(),
+  venueDescription: z.string().optional(),
+});

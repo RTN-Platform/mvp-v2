@@ -11,30 +11,33 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
-import { MapPin, Mail, Key, User, AlertCircle, CheckCircle } from "lucide-react";
+import { Mail, Key, User, AlertCircle, CheckCircle } from "lucide-react";
 import { Facebook, Apple } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-// Login form schema
+// Define schemas outside component to avoid excessive type instantiation
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-// Register form schema
 const registerSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   fullName: z.string().min(2, { message: "Name must be at least 2 characters" }),
 });
 
-// Reset password form schema
 const resetPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
 });
+
+// Define types from schemas to avoid redundancy
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
@@ -58,12 +61,11 @@ const Auth: React.FC = () => {
     if (location.hash && (location.hash.includes("access_token") || location.hash.includes("error"))) {
       console.log("Auth redirect detected with hash fragment");
       // The Supabase client will automatically handle this
-      // No need to manually process the token as supabase.auth.onAuthStateChange will handle it
     }
   }, [location]);
 
-  // Form for login
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
+  // Form for login - using predefined type
+  const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -71,8 +73,8 @@ const Auth: React.FC = () => {
     },
   });
 
-  // Form for registration
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
+  // Form for registration - using predefined type
+  const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
@@ -81,8 +83,8 @@ const Auth: React.FC = () => {
     },
   });
   
-  // Form for reset password
-  const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
+  // Form for reset password - using predefined type
+  const resetPasswordForm = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       email: "",
@@ -94,7 +96,7 @@ const Auth: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  const onLoginSubmit = async (data: z.infer<typeof loginSchema>) => {
+  const onLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
       await signIn(data.email, data.password);
@@ -103,7 +105,7 @@ const Auth: React.FC = () => {
     }
   };
 
-  const onRegisterSubmit = async (data: z.infer<typeof registerSchema>) => {
+  const onRegisterSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
     setRegistrationError(null);
     setRegistrationSuccess(false);
@@ -144,7 +146,7 @@ const Auth: React.FC = () => {
     }
   };
 
-  const onResetPasswordSubmit = async (data: z.infer<typeof resetPasswordSchema>) => {
+  const onResetPasswordSubmit = async (data: ResetPasswordFormData) => {
     setResetPasswordLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {

@@ -11,8 +11,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, User, LogOut, Edit, Heart, MessageSquare, Bell } from "lucide-react";
+import { Map, Users, Heart, MessageSquare, Bell, User, LogOut, Edit } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
+
+const NavIcon: React.FC<{ icon: React.ReactNode, label: string, to: string, isActive?: boolean }> = ({ 
+  icon, 
+  label, 
+  to,
+  isActive 
+}) => {
+  return (
+    <Link 
+      to={to} 
+      className={cn(
+        "flex flex-col items-center justify-center text-gray-600 hover:text-nature-700 transition-colors",
+        isActive && "text-nature-600"
+      )}
+    >
+      <div className="h-6">{icon}</div>
+      <span className="text-xs mt-1 font-medium">{label}</span>
+    </Link>
+  );
+};
 
 const Header: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -30,42 +52,14 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link
-            to="/profile"
-            className="font-medium text-gray-700 hover:text-nature-700"
-          >
-            Profile
-          </Link>
-          <Link
-            to="/tribe"
-            className="font-medium text-gray-700 hover:text-nature-700"
-          >
-            Tribe
-          </Link>
-          <Link
-            to="/experiences"
-            className="font-medium text-gray-700 hover:text-nature-700"
-          >
-            Experiences
-          </Link>
-          <button className="text-gray-700 hover:text-nature-700">
-            <Search size={20} />
-          </button>
-        </nav>
-
         {user && (
-          <div className="hidden md:flex items-center space-x-6">
-            <Link to="/wishlist" className="text-nature-600 hover:text-nature-700">
-              <Heart size={20} />
-            </Link>
-            <Link to="/messages" className="text-nature-600 hover:text-nature-700">
-              <MessageSquare size={20} />
-            </Link>
-            <Link to="/notifications" className="text-nature-600 hover:text-nature-700">
-              <Bell size={20} />
-            </Link>
-          </div>
+          <nav className="hidden md:flex items-center space-x-8">
+            <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />
+            <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
+            <NavIcon icon={<Heart size={24} className="text-nature-600" />} label="FAVOURITES" to="/wishlist" />
+            <NavIcon icon={<MessageSquare size={24} className="text-nature-600" />} label="MESSAGES" to="/messages" />
+            <NavIcon icon={<Bell size={24} className="text-nature-600" />} label="NOTIFICATIONS" to="/notifications" />
+          </nav>
         )}
 
         <div>
@@ -99,7 +93,7 @@ const Header: React.FC = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/wishlist" className="w-full cursor-pointer md:hidden">
                     <Heart className="mr-2 h-4 w-4" />
-                    <span>Wishlist</span>
+                    <span>Favourites</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

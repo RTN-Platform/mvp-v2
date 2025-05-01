@@ -1,212 +1,87 @@
 
 import React, { useState, useEffect } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/contexts/AuthContext";
-import MainLayout from "@/components/layout/MainLayout";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
-// Import components
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
-import ResetPasswordDialog from "@/components/auth/ResetPasswordDialog";
 import SocialLogin from "@/components/auth/SocialLogin";
-
-// Import types
-import { LoginFormData, RegisterFormData, ResetPasswordFormData } from "@/schemas/authSchemas";
+import ResetPasswordDialog from "@/components/auth/ResetPasswordDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth: React.FC = () => {
-  const { user, signIn, signUp, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("login");
-  const location = useLocation();
-  const { toast } = useToast();
-  
-  // State for registration success message
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const [registrationError, setRegistrationError] = useState<string | null>(null);
-  
-  // State for reset password dialog
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
-  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
-  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  // Handle auth redirects with URL hash fragments
+  // Check if user is already logged in
   useEffect(() => {
-    // Check if there's a hash fragment in the URL (from Supabase auth redirect)
-    if (location.hash && (location.hash.includes("access_token") || location.hash.includes("error"))) {
-      console.log("Auth redirect detected with hash fragment");
-      // The Supabase client will automatically handle this
+    if (user) {
+      navigate("/");
     }
-  }, [location]);
-
-  // If user is already logged in, redirect to home
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
-
-  const handleLoginSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      await signIn(data.email, data.password);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegisterSubmit = async (data: RegisterFormData) => {
-    setIsLoading(true);
-    setRegistrationError(null);
-    setRegistrationSuccess(false);
-    
-    try {
-      // Check if email already exists
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', data.email)
-        .maybeSingle();
-      
-      if (checkError) {
-        throw checkError;
-      }
-      
-      if (existingUsers) {
-        setRegistrationError("This email address is already registered. Please log in or use the password reset option if you've forgotten your login details.");
-        return;
-      }
-      
-      const result = await signUp(data.email, data.password, {
-        full_name: data.fullName,
-      });
-      
-      if (!result.error) {
-        setRegistrationSuccess(true);
-      }
-    } catch (error: any) {
-      if (error.message?.includes('already registered')) {
-        setRegistrationError("This email address is already registered. Please log in or use the password reset option if you've forgotten your login details.");
-      } else {
-        setRegistrationError(error.message || "An error occurred during registration. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResetPasswordSubmit = async (data: ResetPasswordFormData) => {
-    setResetPasswordLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) throw error;
-      
-      setResetPasswordSuccess(true);
-      
-      setTimeout(() => {
-        setResetPasswordOpen(false);
-        setResetPasswordSuccess(false);
-      }, 5000);
-      
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to send password reset instructions. Please try again.",
-      });
-    } finally {
-      setResetPasswordLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await googleSignIn();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await facebookSignIn();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      await appleSignIn();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [user, navigate]);
 
   return (
-    <MainLayout>
-      <div className="container max-w-md mx-auto py-8">
-        <Card className="border-nature-200 shadow-sm">
-          <CardHeader className="text-center border-b border-nature-100 bg-nature-50 rounded-t-lg">
-            <CardTitle className="text-2xl text-nature-800 font-serif">Welcome to Nature</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <a href="/">
+            <img
+              src="/lovable-uploads/b024962f-3a9d-42e3-9da7-aaf03202e224.png"
+              alt="Resort to Nature"
+              className="h-16 mx-auto"
+            />
+          </a>
+        </div>
+
+        {/* Auth Card */}
+        <Card className="border-nature-200">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center text-nature-800">
+              Welcome to Resort to Nature
+            </CardTitle>
+            <CardDescription className="text-center">
+              Enter your details to {activeTab === "login" ? "sign in" : "create an account"}
+            </CardDescription>
           </CardHeader>
 
-          <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-            <div className="px-6 pt-4">
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="login">Login</TabsTrigger>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "login" | "register")}>
+              <TabsList className="grid grid-cols-2 mb-6">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
+              <TabsContent value="login">
+                <LoginForm onForgotPassword={() => setResetPasswordOpen(true)} />
+              </TabsContent>
+              <TabsContent value="register">
+                <RegisterForm />
+              </TabsContent>
+            </Tabs>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
             </div>
 
-            <CardContent className="p-6">
-              <TabsContent value="login">
-                <LoginForm 
-                  onSubmit={handleLoginSubmit}
-                  isLoading={isLoading}
-                  onResetPasswordClick={() => setResetPasswordOpen(true)}
-                />
-              </TabsContent>
-
-              <TabsContent value="register">
-                <RegisterForm
-                  onSubmit={handleRegisterSubmit}
-                  isLoading={isLoading}
-                  registrationSuccess={registrationSuccess}
-                  registrationError={registrationError}
-                />
-              </TabsContent>
-            </CardContent>
-
-            <CardFooter className="flex flex-col space-y-4 p-6 pt-0 border-t border-nature-100 mt-4">
-              <SocialLogin
-                onGoogleClick={handleGoogleSignIn}
-                onFacebookClick={handleFacebookSignIn}
-                onAppleClick={handleAppleSignIn}
-                isLoading={isLoading}
-              />
-            </CardFooter>
-          </Tabs>
+            <SocialLogin />
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-sm text-center text-gray-500">
+              By continuing, you agree to Resort to Nature's Terms of Service and Privacy Policy.
+            </div>
+          </CardFooter>
         </Card>
+
+        <ResetPasswordDialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen} />
       </div>
-      
-      {/* Reset Password Dialog */}
-      <ResetPasswordDialog 
-        open={resetPasswordOpen}
-        onOpenChange={setResetPasswordOpen}
-        onSubmit={handleResetPasswordSubmit}
-        isLoading={resetPasswordLoading}
-        success={resetPasswordSuccess}
-      />
-    </MainLayout>
+    </div>
   );
 };
 

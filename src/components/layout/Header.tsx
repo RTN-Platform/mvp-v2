@@ -28,14 +28,14 @@ const NavIcon: React.FC<{ icon: React.ReactNode, label: string, to: string }> = 
     <Link 
       to={to} 
       className={cn(
-        "flex flex-col items-center justify-center text-gray-600 hover:text-nature-700 transition-colors relative",
+        "flex flex-col items-center justify-center text-gray-600 hover:text-nature-700 transition-colors relative py-2",
         isActive && "text-nature-600"
       )}
     >
       <div className="h-6">{icon}</div>
       <span className="text-xs mt-1 font-medium">{label}</span>
       {isActive && (
-        <div className="absolute -bottom-4 left-0 right-0 h-1 bg-nature-600 rounded-t-md" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-nature-600" />
       )}
     </Link>
   );
@@ -45,7 +45,7 @@ const Header: React.FC = () => {
   const { user, profile, signOut } = useAuth();
 
   return (
-    <header className="border-b bg-white py-4 sticky top-0 z-10">
+    <header className="border-b bg-white py-3 sticky top-0 z-10">
       <div className="container mx-auto px-4 flex justify-between items-center max-w-4xl">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center">
@@ -58,7 +58,7 @@ const Header: React.FC = () => {
         </div>
 
         {user && (
-          <nav className="hidden md:flex items-center space-x-8 relative pb-4">
+          <nav className="hidden md:flex items-center space-x-8 relative">
             <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />
             <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
             <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/favourites" />

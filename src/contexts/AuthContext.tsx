@@ -17,6 +17,10 @@ type AuthContextType = {
     error: any | null;
     data: any | null;
   }>;
+  resetPassword: (email: string) => Promise<{
+    error: any | null;
+    data: any | null;
+  }>;
   signOut: () => Promise<void>;
   googleSignIn: () => Promise<void>;
   facebookSignIn: () => Promise<void>;
@@ -121,6 +125,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { data: null, error };
     }
   };
+  
+  const resetPassword = async (email: string) => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password reset email sent",
+        description: "Please check your email for the reset link.",
+      });
+      
+      return { data, error: null };
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Password reset failed",
+        description: error.message || "Failed to send reset email. Please try again.",
+      });
+      return { data: null, error };
+    }
+  };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -165,6 +193,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         signUp,
         signIn,
+        resetPassword,
         signOut,
         googleSignIn,
         facebookSignIn,

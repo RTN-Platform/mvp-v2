@@ -8,11 +8,17 @@ import RegisterForm from "@/components/auth/RegisterForm";
 import SocialLogin from "@/components/auth/SocialLogin";
 import ResetPasswordDialog from "@/components/auth/ResetPasswordDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { LoginFormData, RegisterFormData, ResetPasswordFormData } from "@/schemas/authSchemas";
 
 const Auth: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
-  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  
+  const { user, signIn, signUp, resetPassword, googleSignIn, facebookSignIn, appleSignIn } = useAuth();
   const navigate = useNavigate();
 
   // Check if user is already logged in
@@ -21,6 +27,53 @@ const Auth: React.FC = () => {
       navigate("/");
     }
   }, [user, navigate]);
+
+  // Handle login form submission
+  const handleLoginSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await signIn(data.email, data.password);
+      if (error) throw error;
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle registration form submission
+  const handleRegisterSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
+    setRegistrationError(null);
+    
+    try {
+      const { error } = await signUp(data.email, data.password, {
+        fullName: data.fullName
+      });
+      
+      if (error) throw error;
+      setRegistrationSuccess(true);
+    } catch (error: any) {
+      setRegistrationError(error.message);
+      console.error("Registration error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle password reset
+  const handleResetPassword = async (data: ResetPasswordFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(data.email);
+      if (error) throw error;
+      setResetSuccess(true);
+    } catch (error) {
+      console.error("Reset password error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -54,10 +107,19 @@ const Auth: React.FC = () => {
                 <TabsTrigger value="register">Register</TabsTrigger>
               </TabsList>
               <TabsContent value="login">
-                <LoginForm onForgotPassword={() => setResetPasswordOpen(true)} />
+                <LoginForm
+                  onSubmit={handleLoginSubmit}
+                  isLoading={isLoading}
+                  onResetPasswordClick={() => setResetPasswordOpen(true)}
+                />
               </TabsContent>
               <TabsContent value="register">
-                <RegisterForm />
+                <RegisterForm
+                  onSubmit={handleRegisterSubmit}
+                  isLoading={isLoading}
+                  registrationSuccess={registrationSuccess}
+                  registrationError={registrationError}
+                />
               </TabsContent>
             </Tabs>
 
@@ -70,7 +132,12 @@ const Auth: React.FC = () => {
               </div>
             </div>
 
-            <SocialLogin />
+            <SocialLogin 
+              onGoogleClick={googleSignIn}
+              onFacebookClick={facebookSignIn}
+              onAppleClick={appleSignIn}
+              isLoading={isLoading}
+            />
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-sm text-center text-gray-500">
@@ -79,7 +146,13 @@ const Auth: React.FC = () => {
           </CardFooter>
         </Card>
 
-        <ResetPasswordDialog open={resetPasswordOpen} onOpenChange={setResetPasswordOpen} />
+        <ResetPasswordDialog 
+          open={resetPasswordOpen} 
+          onOpenChange={setResetPasswordOpen} 
+          onSubmit={handleResetPassword}
+          isLoading={isLoading}
+          success={resetSuccess}
+        />
       </div>
     </div>
   );

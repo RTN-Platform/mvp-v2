@@ -17,16 +17,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
   isLoading 
 }) => {
   return (
-    <>
-      <div className="relative w-full">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or continue with</span>
-        </div>
-      </div>
-      
+    <div className="space-y-3">
       <Button 
         variant="outline" 
         className="w-full" 
@@ -60,7 +51,7 @@ const SocialLogin: React.FC<SocialLoginProps> = ({
         <Apple className="h-5 w-5 mr-2" />
         Apple
       </Button>
-    </>
+    </div>
   );
 };
 

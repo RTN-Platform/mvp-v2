@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -14,14 +15,16 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { MapPin, Star, Users, Clock, Calendar as CalendarIcon, Check } from "lucide-react";
+import { MapPin, Star, Clock, Calendar as CalendarIcon, Check } from "lucide-react";
 import CommentSection from "@/components/comments/CommentSection";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ExperienceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [participants, setParticipants] = useState(1);
+  const isMobile = useIsMobile();
   
   // Mock data for the experience detail page
   // In a real application, this would be fetched from an API based on the ID
@@ -40,7 +43,6 @@ const ExperienceDetail: React.FC = () => {
       ],
       rating: 4.9,
       reviewCount: 128,
-      participants: 4,
       price: "$129/person",
       duration: "6 hours",
       includes: [
@@ -79,7 +81,6 @@ const ExperienceDetail: React.FC = () => {
       ],
       rating: 4.8,
       reviewCount: 95,
-      participants: 2,
       price: "$259/person",
       duration: "Full day (8 hours)",
       includes: [
@@ -130,14 +131,14 @@ const ExperienceDetail: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="py-4 max-w-6xl mx-auto">
+      <div className="py-4 px-4 md:px-6 max-w-5xl mx-auto">
         {/* Hero section with carousel */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <Carousel className="w-full">
             <CarouselContent>
               {experience.images.map((image, index) => (
                 <CarouselItem key={index}>
-                  <div className="relative h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden rounded-lg">
+                  <div className="relative h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] overflow-hidden rounded-lg">
                     <img
                       src={image}
                       alt={`${experience.title} - image ${index + 1}`}
@@ -152,8 +153,8 @@ const ExperienceDetail: React.FC = () => {
           </Carousel>
         </div>
 
-        {/* Main content with sidebar layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main content layout that adapts to screen size */}
+        <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-6 lg:gap-8`}>
           {/* Left column - Experience details */}
           <div className="lg:col-span-2">
             <div className="mb-6">
@@ -165,10 +166,10 @@ const ExperienceDetail: React.FC = () => {
                 ))}
               </div>
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{experience.title}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{experience.title}</h1>
               <p className="text-lg text-gray-600 mb-3">{experience.tagline}</p>
               
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-3 mb-4">
                 <div className="flex items-center">
                   <MapPin size={16} className="text-gray-500 mr-1" />
                   <span className="text-gray-600">{experience.location}</span>
@@ -186,7 +187,7 @@ const ExperienceDetail: React.FC = () => {
             </div>
 
             <Tabs defaultValue="description" className="mb-8">
-              <TabsList>
+              <TabsList className="mb-2 w-full sm:w-auto">
                 <TabsTrigger value="description">Description</TabsTrigger>
                 <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
@@ -206,8 +207,8 @@ const ExperienceDetail: React.FC = () => {
                   </ul>
                 </div>
                 
-                {/* Comments section */}
-                <Separator className="my-8" />
+                {/* Comments section integrated directly after "what's included" */}
+                <Separator className="my-6" />
                 <CommentSection experienceId={experience.id} />
               </TabsContent>
               
@@ -216,8 +217,8 @@ const ExperienceDetail: React.FC = () => {
                   <h3 className="font-semibold text-lg mb-2">Your day at a glance:</h3>
                   <ol className="space-y-4">
                     {experience.itinerary.map((item, idx) => (
-                      <li key={idx} className="flex">
-                        <div className="mr-4 font-medium text-nature-700 w-24 flex-shrink-0">
+                      <li key={idx} className="flex flex-col sm:flex-row">
+                        <div className="font-medium text-nature-700 w-24 flex-shrink-0 mb-1 sm:mb-0">
                           {item.time}
                         </div>
                         <div>
@@ -248,18 +249,14 @@ const ExperienceDetail: React.FC = () => {
             </Tabs>
           </div>
 
-          {/* Right column - Booking widget */}
-          <div>
-            <Card className="sticky top-24">
-              <CardContent className="p-6">
+          {/* Right column - Booking widget that becomes full width on mobile */}
+          <div className="lg:col-span-1">
+            <Card className={isMobile ? "w-full" : "sticky top-24"}>
+              <CardContent className="p-4 md:p-6">
                 <div className="mb-4">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Book this experience</h3>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-2xl font-bold text-nature-800">{experience.price}</span>
-                    <div className="flex items-center">
-                      <Users size={16} className="text-gray-500 mr-1" />
-                      <span className="text-gray-600">{experience.participants} spots left</span>
-                    </div>
                   </div>
                 </div>
 
@@ -268,14 +265,16 @@ const ExperienceDetail: React.FC = () => {
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium mb-2">Select date</label>
-                    <div className="border rounded-md p-1">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        disabled={(date) => date < new Date()}
-                        className="pointer-events-auto"
-                      />
+                    <div className="border rounded-md p-1 overflow-x-auto max-w-full">
+                      <div className="min-w-[280px]">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setDate}
+                          disabled={(date) => date < new Date()}
+                          className="pointer-events-auto"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -288,6 +287,8 @@ const ExperienceDetail: React.FC = () => {
                         size="icon"
                         onClick={() => setParticipants(p => Math.max(1, p - 1))}
                         disabled={participants <= 1}
+                        className="h-10 w-10"
+                        aria-label="Decrease participants"
                       >
                         -
                       </Button>
@@ -296,8 +297,9 @@ const ExperienceDetail: React.FC = () => {
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={() => setParticipants(p => Math.min(experience.participants, p + 1))}
-                        disabled={participants >= experience.participants}
+                        onClick={() => setParticipants(p => p + 1)}
+                        className="h-10 w-10"
+                        aria-label="Increase participants"
                       >
                         +
                       </Button>

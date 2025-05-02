@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
@@ -16,22 +16,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 
-const NavIcon: React.FC<{ icon: React.ReactNode, label: string, to: string, isActive?: boolean }> = ({ 
+const NavIcon: React.FC<{ icon: React.ReactNode, label: string, to: string }> = ({ 
   icon, 
   label, 
-  to,
-  isActive 
+  to 
 }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  
   return (
     <Link 
       to={to} 
       className={cn(
-        "flex flex-col items-center justify-center text-gray-600 hover:text-nature-700 transition-colors",
+        "flex flex-col items-center justify-center text-gray-600 hover:text-nature-700 transition-colors relative",
         isActive && "text-nature-600"
       )}
     >
       <div className="h-6">{icon}</div>
       <span className="text-xs mt-1 font-medium">{label}</span>
+      {isActive && (
+        <div className="absolute -bottom-4 left-0 right-0 h-1 bg-nature-600 rounded-t-md" />
+      )}
     </Link>
   );
 };
@@ -53,12 +58,12 @@ const Header: React.FC = () => {
         </div>
 
         {user && (
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-8 relative pb-4">
             <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />
             <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
-            <NavIcon icon={<Heart size={24} className="text-nature-600" />} label="FAVOURITES" to="/wishlist" />
-            <NavIcon icon={<MessageSquare size={24} className="text-nature-600" />} label="MESSAGES" to="/messages" />
-            <NavIcon icon={<Bell size={24} className="text-nature-600" />} label="NOTIFICATIONS" to="/notifications" />
+            <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/wishlist" />
+            <NavIcon icon={<MessageSquare size={24} />} label="MESSAGES" to="/messages" />
+            <NavIcon icon={<Bell size={24} />} label="NOTIFICATIONS" to="/notifications" />
           </nav>
         )}
 

@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Tribe from "./pages/Tribe";
 import Experiences from "./pages/Experiences";
+import ExperienceDetail from "./pages/ExperienceDetail";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/tribe" element={<Tribe />} />
           <Route path="/experiences" element={<Experiences />} />
+          <Route path="/experiences/:id" element={<ExperienceDetail />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/wishlist" element={<Wishlist />} />

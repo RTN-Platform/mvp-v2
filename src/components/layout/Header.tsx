@@ -61,7 +61,7 @@ const Header: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-8 relative pb-4">
             <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />
             <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
-            <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/wishlist" />
+            <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/favourites" />
             <NavIcon icon={<MessageSquare size={24} />} label="MESSAGES" to="/messages" />
             <NavIcon icon={<Bell size={24} />} label="NOTIFICATIONS" to="/notifications" />
           </nav>
@@ -96,7 +96,7 @@ const Header: React.FC = () => {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/wishlist" className="w-full cursor-pointer md:hidden">
+                  <Link to="/favourites" className="w-full cursor-pointer md:hidden">
                     <Heart className="mr-2 h-4 w-4" />
                     <span>Favourites</span>
                   </Link>

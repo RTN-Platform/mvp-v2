@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { MapPin, Star, Users, Clock, Calendar as CalendarIcon, Check } from "lucide-react";
+import CommentSection from "@/components/comments/CommentSection";
 
 const ExperienceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -130,7 +130,7 @@ const ExperienceDetail: React.FC = () => {
 
   return (
     <MainLayout>
-      <div className="py-4">
+      <div className="py-4 max-w-6xl mx-auto">
         {/* Hero section with carousel */}
         <div className="mb-8">
           <Carousel className="w-full">
@@ -205,6 +205,10 @@ const ExperienceDetail: React.FC = () => {
                     ))}
                   </ul>
                 </div>
+                
+                {/* Comments section */}
+                <Separator className="my-8" />
+                <CommentSection experienceId={experience.id} />
               </TabsContent>
               
               <TabsContent value="itinerary" className="mt-4">

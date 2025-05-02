@@ -15,7 +15,7 @@ import ExperienceDetail from "./pages/ExperienceDetail";
 import NotFound from "./pages/NotFound";
 import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
-import Wishlist from "./pages/Wishlist";
+import Favourites from "./pages/Wishlist"; // Component is still called Wishlist but we'll rename the route
 import CreateUpdate from "./pages/CreateUpdate";
 import BecomeHost from "./pages/BecomeHost";
 
@@ -38,7 +38,7 @@ const App = () => (
           <Route path="/experiences/:id" element={<ExperienceDetail />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/notifications" element={<Notifications />} />
-          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/favourites" element={<Favourites />} />
           <Route path="/create-update" element={<CreateUpdate />} />
           <Route path="/become-host" element={<BecomeHost />} />
           <Route path="*" element={<NotFound />} />

@@ -87,16 +87,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <Alert className="bg-green-50 text-green-800 border-green-200 mb-4">
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Registration successful! You'll be automatically logged in.
+              Registration successful! {' '}
+              {registrationError ? 
+                registrationError : 
+                "You'll be automatically logged in."}
             </AlertDescription>
           </Alert>
         )}
         
-        {registrationError && (
+        {registrationError && !registrationSuccess && (
           <Alert className="bg-red-50 text-red-800 border-red-200 mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {registrationError}
+              {registrationError.includes('already registered') ? (
+                <>
+                  This email is already registered. Please use the login tab instead.
+                </>
+              ) : (
+                registrationError
+              )}
             </AlertDescription>
           </Alert>
         )}

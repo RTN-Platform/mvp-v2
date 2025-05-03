@@ -49,19 +49,37 @@ const Auth: React.FC = () => {
   // Handle registration form submission
   const handleRegisterSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
+    setRegistrationSuccess(false);
     setRegistrationError(null);
     
     try {
-      const { error } = await signUp(data.email, data.password, {
+      const { error, data: authData } = await signUp(data.email, data.password, {
         fullName: data.fullName
       });
       
-      if (error) throw error;
-      setRegistrationSuccess(true);
-      toast({
-        title: "Registration successful",
-        description: "Welcome to Resort to Nature!",
-      });
+      if (error) {
+        // If this is already registered error, switch to login tab
+        if (error.message?.includes('already registered')) {
+          setActiveTab("login");
+          setRegistrationError(error.message);
+        } else {
+          setRegistrationError(error.message);
+        }
+      } else if (authData?.session) {
+        // If we have a session, registration was successful and auto-login worked
+        setRegistrationSuccess(true);
+        toast({
+          title: "Registration successful",
+          description: "Welcome to Resort to Nature!",
+        });
+      } else {
+        // Email verification might be required
+        setRegistrationSuccess(true);
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to complete registration.",
+        });
+      }
     } catch (error: any) {
       setRegistrationError(error.message);
       console.error("Registration error:", error);

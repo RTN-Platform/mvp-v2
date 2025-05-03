@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Fetch user profile after login
+          // Fetch user profile after login - Use setTimeout to avoid Supabase lock
           setTimeout(() => fetchUserProfile(currentSession.user.id), 0);
         }
         
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setProfile(data);
@@ -86,27 +86,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData?: Record<string, any>) => {
     try {
-      // For testing: Disable email confirmation by directly authenticating the user after signup
+      // Sign up user with Supabase
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: userData,
-          // Temporarily removed email verification for testing
-          emailRedirectTo: undefined 
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
 
-      if (error) throw error;
-      
-      // For testing: Auto sign in after registration
-      if (data.user && !data.session) {
-        // If email verification is disabled in Supabase dashboard, we should have a session
-        // If not, we'll sign them in automatically for testing
-        await signIn(email, password);
+      if (error) {
+        // Check for duplicate email error
+        if (error.message?.includes('already registered')) {
+          return { 
+            data: null, 
+            error: { 
+              message: 'This email is already registered. Please log in instead.' 
+            } 
+          };
+        }
+        throw error;
       }
       
-      return { data, error: null };
+      // If email verification is disabled, we should have a session immediately
+      if (data.session) {
+        return { data, error: null };
+      } else {
+        // Otherwise, provide a success message but don't auto-login
+        return { 
+          data, 
+          error: { 
+            message: 'Registration successful! Please check your email to verify your account.'
+          }
+        };
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",

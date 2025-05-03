@@ -87,7 +87,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <Alert className="bg-green-50 text-green-800 border-green-200 mb-4">
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              After registering, please check your email for a confirmation link to complete your account setup.
+              Registration successful! You'll be automatically logged in.
             </AlertDescription>
           </Alert>
         )}

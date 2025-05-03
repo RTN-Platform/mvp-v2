@@ -9,6 +9,7 @@ import SocialLogin from "@/components/auth/SocialLogin";
 import ResetPasswordDialog from "@/components/auth/ResetPasswordDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginFormData, RegisterFormData, ResetPasswordFormData } from "@/schemas/authSchemas";
+import { toast } from "@/components/ui/use-toast";
 
 const Auth: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
@@ -34,6 +35,10 @@ const Auth: React.FC = () => {
     try {
       const { error } = await signIn(data.email, data.password);
       if (error) throw error;
+      toast({
+        title: "Login successful",
+        description: "Welcome back to Resort to Nature!",
+      });
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -53,6 +58,10 @@ const Auth: React.FC = () => {
       
       if (error) throw error;
       setRegistrationSuccess(true);
+      toast({
+        title: "Registration successful",
+        description: "Welcome to Resort to Nature!",
+      });
     } catch (error: any) {
       setRegistrationError(error.message);
       console.error("Registration error:", error);

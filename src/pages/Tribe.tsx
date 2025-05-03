@@ -1,10 +1,21 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+
+interface TribeMember {
+  id: string;
+  full_name: string;
+  location: string;
+  avatar_url?: string;
+  interests: string[];
+}
 
 const TribeMember = ({ name, location, avatar, interests }: { 
   name: string;
@@ -46,44 +57,50 @@ const TribeMember = ({ name, location, avatar, interests }: {
 };
 
 const Tribe: React.FC = () => {
-  const tribeMembers = [
-    {
-      name: "Alex Johnson",
-      location: "Zion National Park",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Hiking", "Photography", "Wildlife"]
-    },
-    {
-      name: "Emma Wilson",
-      location: "Yosemite Valley",
-      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Trail Running", "Camping", "Bird Watching"]
-    },
-    {
-      name: "Monica Smith",
-      location: "Costa Rica",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Glamping", "Yoga", "Rainforest Tours"]
-    },
-    {
-      name: "David Park",
-      location: "Glacier National Park",
-      avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Fishing", "Backpacking", "Alpine Lakes"]
-    },
-    {
-      name: "Sarah Chen",
-      location: "Olympic National Park",
-      avatar: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Kayaking", "Tree Identification", "Waterfall Hikes"]
-    },
-    {
-      name: "Michael Torres",
-      location: "Joshua Tree",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=100&q=80",
-      interests: ["Desert Hiking", "Star Gazing", "Rock Climbing"]
+  const [tribeMembers, setTribeMembers] = useState<TribeMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*');
+
+        if (error) throw error;
+
+        // Transform the data to match the TribeMember interface
+        const formattedMembers = data.map((profile: any) => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Anonymous User',
+          location: profile.location || 'Unknown Location',
+          avatar_url: profile.avatar_url,
+          interests: profile.interests || []
+        }));
+
+        setTribeMembers(formattedMembers);
+      } catch (error) {
+        console.error('Error fetching profiles:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  ];
+
+    fetchProfiles();
+  }, []);
+
+  // Filter tribe members based on search query
+  const filteredMembers = tribeMembers.filter(member => {
+    const searchString = searchQuery.toLowerCase();
+    return (
+      member.full_name.toLowerCase().includes(searchString) ||
+      member.location.toLowerCase().includes(searchString) ||
+      member.interests.some(interest => interest.toLowerCase().includes(searchString))
+    );
+  });
 
   return (
     <MainLayout>
@@ -95,11 +112,37 @@ const Tribe: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {tribeMembers.map((member, index) => (
-            <TribeMember key={index} {...member} />
-          ))}
+        {/* Search bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Search tribe members by name, location or interests"
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+
+        {isLoading ? (
+          <div className="text-center py-8">Loading tribe members...</div>
+        ) : filteredMembers.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMembers.map((member, index) => (
+              <TribeMember 
+                key={member.id}
+                name={member.full_name}
+                location={member.location}
+                avatar={member.avatar_url}
+                interests={member.interests}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            {searchQuery ? 'No tribe members found for your search.' : 'No tribe members yet.'}
+          </div>
+        )}
       </div>
     </MainLayout>
   );

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,15 +86,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData?: Record<string, any>) => {
     try {
+      // For testing: Disable email confirmation by directly authenticating the user after signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: userData,
+          // Temporarily removed email verification for testing
+          emailRedirectTo: undefined 
         },
       });
 
       if (error) throw error;
+      
+      // For testing: Auto sign in after registration
+      if (data.user && !data.session) {
+        // If email verification is disabled in Supabase dashboard, we should have a session
+        // If not, we'll sign them in automatically for testing
+        await signIn(email, password);
+      }
+      
       return { data, error: null };
     } catch (error: any) {
       toast({

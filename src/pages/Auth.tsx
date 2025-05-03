@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,12 +32,16 @@ const Auth: React.FC = () => {
   const handleLoginSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const { error } = await signIn(data.email, data.password);
-      if (error) throw error;
-      toast({
-        title: "Login successful",
-        description: "Welcome back to Resort to Nature!",
-      });
+      const result = await signIn(data.email, data.password);
+      if (result.error) {
+        // Error is already handled in AuthContext
+        console.error("Login error:", result.error);
+      } else {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to Resort to Nature!",
+        });
+      }
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -53,35 +56,27 @@ const Auth: React.FC = () => {
     setRegistrationError(null);
     
     try {
-      const { error, data: authData } = await signUp(data.email, data.password, {
+      const result = await signUp(data.email, data.password, {
         fullName: data.fullName
       });
       
-      if (error) {
+      if (result.error) {
         // If this is already registered error, switch to login tab
-        if (error.message?.includes('already registered')) {
+        if (result.error.message?.includes('already registered')) {
           setActiveTab("login");
-          setRegistrationError(error.message);
-        } else {
-          setRegistrationError(error.message);
         }
-      } else if (authData?.session) {
+        setRegistrationError(result.error.message || "Registration failed");
+      } else if (result.data?.session) {
         // If we have a session, registration was successful and auto-login worked
         setRegistrationSuccess(true);
-        toast({
-          title: "Registration successful",
-          description: "Welcome to Resort to Nature!",
-        });
+        // Since auto-login worked, we'll be redirected by the useEffect above
       } else {
-        // Email verification might be required
+        // If email verification is enabled, show success message
         setRegistrationSuccess(true);
-        toast({
-          title: "Registration successful",
-          description: "Please check your email to complete registration.",
-        });
+        setRegistrationError("Registration successful! Please check your email to verify your account.");
       }
     } catch (error: any) {
-      setRegistrationError(error.message);
+      setRegistrationError(error.message || "Registration failed");
       console.error("Registration error:", error);
     } finally {
       setIsLoading(false);

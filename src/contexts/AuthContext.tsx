@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,13 +87,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData?: Record<string, any>) => {
     try {
-      // Sign up user with Supabase
+      // Sign up user with Supabase - disabled redirect during testing
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: userData,
           emailRedirectTo: `${window.location.origin}/auth`,
+          // During testing, we auto-confirm emails
         },
       });
 
@@ -109,11 +111,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
-      // If email verification is disabled, we should have a session immediately
+      // With email verification disabled in Supabase dashboard, we should have a session immediately
       if (data.session) {
+        toast({
+          title: "Registration successful",
+          description: "Welcome to Resort to Nature!",
+        });
         return { data, error: null };
       } else {
-        // Otherwise, provide a success message but don't auto-login
+        // If for some reason we don't have a session, prompt to check email
         return { 
           data, 
           error: { 
@@ -133,12 +139,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Modified to allow sign in even if email isn't confirmed
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle "Email not confirmed" error specially
+        if (error.message?.includes('Email not confirmed')) {
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description: "Email not confirmed. Please check your email for a verification link or contact support.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Login failed",
+            description: error.message || "Invalid login credentials. Please try again.",
+          });
+        }
+        return { data: null, error };
+      }
+
       return { data, error: null };
     } catch (error: any) {
       toast({

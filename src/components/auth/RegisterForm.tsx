@@ -87,10 +87,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           <Alert className="bg-green-50 text-green-800 border-green-200 mb-4">
             <CheckCircle className="h-4 w-4" />
             <AlertDescription>
-              Registration successful! {' '}
-              {registrationError ? 
+              {registrationError && registrationError.includes("check your email") ? 
                 registrationError : 
-                "You'll be automatically logged in."}
+                "Registration successful! You'll be automatically logged in."}
             </AlertDescription>
           </Alert>
         )}

@@ -33,24 +33,53 @@ const Messages: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Fetch pending connection requests sent to the current user
-      const { data, error } = await supabase
+      // First fetch the connections
+      const { data: connectionsData, error: connectionsError } = await supabase
         .from('connections')
-        .select(`
-          id,
-          inviter_id,
-          message,
-          status,
-          created_at,
-          inviter:profiles!inviter_id(full_name, avatar_url)
-        `)
+        .select('id, inviter_id, message, status, created_at')
         .eq('invitee_id', user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (connectionsError) throw connectionsError;
+      if (!connectionsData || connectionsData.length === 0) {
+        setConnectionRequests([]);
+        return;
+      }
       
-      setConnectionRequests(data || []);
+      // Then fetch profile data for each inviter
+      const connectionWithProfiles = await Promise.all(
+        connectionsData.map(async (connection) => {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', connection.inviter_id)
+            .single();
+          
+          if (profileError || !profileData) {
+            console.error('Error fetching profile:', profileError);
+            // Return connection with fallback profile data
+            return {
+              ...connection,
+              inviter: {
+                full_name: 'Unknown User',
+                avatar_url: null
+              }
+            };
+          }
+          
+          return {
+            ...connection,
+            inviter: {
+              full_name: profileData.full_name || 'Unknown User',
+              avatar_url: profileData.avatar_url
+            }
+          };
+        })
+      );
+      
+      setConnectionRequests(connectionWithProfiles);
+      
     } catch (error) {
       console.error('Error fetching connection requests:', error);
     } finally {

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -83,6 +82,22 @@ const Header: React.FC = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{profile?.full_name || user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+
+                {/* Add Explore and My Tribe links for mobile as the first items */}
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link to="/experiences" className="w-full cursor-pointer">
+                    <Map className="mr-2 h-4 w-4" />
+                    <span>Explore</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link to="/tribe" className="w-full cursor-pointer">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>My Tribe</span>
+                  </Link>
+                </DropdownMenuItem>
+                
+                {/* Existing dropdown items */}
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="w-full cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
@@ -95,20 +110,20 @@ const Header: React.FC = () => {
                     <span>Edit Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/favourites" className="w-full cursor-pointer md:hidden">
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link to="/favourites" className="w-full cursor-pointer">
                     <Heart className="mr-2 h-4 w-4" />
                     <span>Favourites</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/messages" className="w-full cursor-pointer md:hidden">
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link to="/messages" className="w-full cursor-pointer">
                     <MessageSquare className="mr-2 h-4 w-4" />
                     <span>Messages</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/notifications" className="w-full cursor-pointer md:hidden">
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link to="/notifications" className="w-full cursor-pointer">
                     <Bell className="mr-2 h-4 w-4" />
                     <span>Notifications</span>
                   </Link>

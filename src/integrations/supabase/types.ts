@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          message: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -53,7 +83,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_connection_rate_limit: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Star, Users, Search, SlidersHorizontal } from "lucide-react";
+import { MapPin, Star, Heart, Search, SlidersHorizontal } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -15,6 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ExperienceCardProps {
   id: string;
@@ -33,10 +37,72 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
   location,
   image,
   rating,
-  participants,
   price,
   tags,
 }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+
+  // Check if experience is in favorites on component mount
+  useEffect(() => {
+    if (user) {
+      const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+      setIsFavorited(favorites.includes(id));
+    }
+  }, [id, user]);
+
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    const newFavoritedState = !isFavorited;
+    setIsFavorited(newFavoritedState);
+    
+    // Get current favorites from local storage
+    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+    
+    // Update favorites
+    let updatedFavorites;
+    if (newFavoritedState) {
+      // Add to favorites if not already included
+      updatedFavorites = !favorites.includes(id) ? [...favorites, id] : favorites;
+      
+      toast({
+        title: "Added to favorites",
+        description: "This experience has been added to your favorites.",
+      });
+    } else {
+      // Remove from favorites
+      updatedFavorites = favorites.filter((favId: string) => favId !== id);
+      
+      toast({
+        title: "Removed from favorites",
+        description: "This experience has been removed from your favorites.",
+      });
+    }
+    
+    // Save updated favorites to local storage
+    localStorage.setItem("favorites", JSON.stringify(updatedFavorites));
+    
+    // Update likes status for this specific item
+    const likedPosts = JSON.parse(localStorage.getItem("likedPosts") || "{}");
+    if (newFavoritedState) {
+      likedPosts[id] = true;
+    } else {
+      delete likedPosts[id];
+    }
+    localStorage.setItem("likedPosts", JSON.stringify(likedPosts));
+  };
+
   return (
     <Card className="overflow-hidden h-full transition-all duration-300 hover:shadow-lg group">
       <Link to={`/experiences/${id}`}>
@@ -68,10 +134,14 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
             <Star size={16} className="text-yellow-500 mr-1" />
             <span className="text-sm font-medium">{rating}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-500">
-            <Users size={14} className="mr-1" />
-            <span>{participants} spots left</span>
-          </div>
+          <button 
+            onClick={handleFavoriteToggle}
+            className={`flex items-center gap-1 transition-colors ${isFavorited ? 'text-nature-600' : 'text-gray-500 hover:text-nature-600'}`}
+            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart size={18} className="flex-shrink-0" fill={isFavorited ? "currentColor" : "none"} />
+            {!isMobile && <span className="text-sm">{isFavorited ? "Favorited" : "Add to favorites"}</span>}
+          </button>
         </div>
         <div className="flex justify-between items-center">
           <span className="font-bold text-nature-800">{price}</span>
@@ -83,6 +153,26 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
           </Button>
         </div>
       </CardContent>
+
+      {/* Authentication Dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign in required</DialogTitle>
+            <DialogDescription>
+              You need to be signed in to favorite experiences and add them to your collection.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setShowAuthDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => navigate("/auth")}>
+              Sign in
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

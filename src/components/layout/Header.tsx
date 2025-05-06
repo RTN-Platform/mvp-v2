@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Map, Users, Heart, MessageSquare, Bell, User, LogOut, Edit } from "lucide-react";
+import { Map, Users, Heart, MessageSquare, User, LogOut, Edit, Settings, Shield, ListFilter } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import { isAdmin, isHost } from "@/utils/roles";
 
 const NavIcon: React.FC<{ icon: React.ReactNode, label: string, to: string }> = ({ 
   icon, 
@@ -62,6 +64,9 @@ const Header: React.FC = () => {
             <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
             <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/favourites" />
             <NavIcon icon={<MessageSquare size={24} />} label="MESSAGES" to="/messages" />
+            {isHost(profile) && (
+              <NavIcon icon={<ListFilter size={24} />} label="MY LISTINGS" to="/my-listings" />
+            )}
           </nav>
         )}
 
@@ -79,10 +84,24 @@ const Header: React.FC = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{profile?.full_name || user.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>
+                  <div>
+                    {profile?.full_name || user.email}
+                    {profile?.role && (
+                      <span className={cn(
+                        "ml-2 text-xs px-1.5 py-0.5 rounded-full", 
+                        profile.role === 'admin' ? "bg-red-100 text-red-700" : 
+                        profile.role === 'host' ? "bg-blue-100 text-blue-700" : 
+                        "bg-green-100 text-green-700"
+                      )}>
+                        {profile.role}
+                      </span>
+                    )}
+                  </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Add Explore and My Tribe links for mobile as the first items */}
+                {/* Add Explore and My Tribe links for mobile */}
                 <DropdownMenuItem asChild className="md:hidden">
                   <Link to="/experiences" className="w-full cursor-pointer">
                     <Map className="mr-2 h-4 w-4" />
@@ -96,7 +115,7 @@ const Header: React.FC = () => {
                   </Link>
                 </DropdownMenuItem>
                 
-                {/* Existing dropdown items */}
+                {/* Profile related items */}
                 <DropdownMenuItem asChild>
                   <Link to="/profile" className="w-full cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
@@ -109,6 +128,8 @@ const Header: React.FC = () => {
                     <span>Edit Profile</span>
                   </Link>
                 </DropdownMenuItem>
+
+                {/* Mobile-only navigation items */}
                 <DropdownMenuItem asChild className="md:hidden">
                   <Link to="/favourites" className="w-full cursor-pointer">
                     <Heart className="mr-2 h-4 w-4" />
@@ -121,6 +142,42 @@ const Header: React.FC = () => {
                     <span>Messages</span>
                   </Link>
                 </DropdownMenuItem>
+
+                {/* Host-only menu item */}
+                {isHost(profile) && (
+                  <DropdownMenuItem asChild className="md:hidden">
+                    <Link to="/my-listings" className="w-full cursor-pointer">
+                      <ListFilter className="mr-2 h-4 w-4" />
+                      <span>My Listings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                
+                {/* Admin-only menu items */}
+                {isAdmin(profile) && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="w-full cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/users" className="w-full cursor-pointer">
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>User Management</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/audit-logs" className="w-full cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Audit Logs</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />

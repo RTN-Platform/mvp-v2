@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           created_at: string
@@ -48,6 +81,7 @@ export type Database = {
           id: string
           interests: string[] | null
           location: string | null
+          role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           username: string | null
           website: string | null
@@ -60,6 +94,7 @@ export type Database = {
           id: string
           interests?: string[] | null
           location?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           username?: string | null
           website?: string | null
@@ -72,6 +107,7 @@ export type Database = {
           id?: string
           interests?: string[] | null
           location?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           username?: string | null
           website?: string | null
@@ -87,9 +123,37 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_host_or_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          action: string
+          entity_type: string
+          entity_id: string
+          details?: Json
+        }
+        Returns: undefined
+      }
+      update_user_role: {
+        Args: {
+          user_id: string
+          new_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "visitor" | "tribe" | "host" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -204,6 +268,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["visitor", "tribe", "host", "admin"],
+    },
   },
 } as const

@@ -3,11 +3,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { UserRole } from '@/utils/roles';
+
+type Profile = {
+  id: string;
+  avatar_url: string | null;
+  full_name: string | null;
+  username: string | null;
+  website: string | null; 
+  bio: string | null;
+  location: string | null;
+  interests: string[] | null;
+  role: UserRole;
+  updated_at: string;
+};
 
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, userData?: Record<string, any>) => Promise<{
     error: any | null;
@@ -25,6 +39,8 @@ type AuthContextType = {
   googleSignIn: () => Promise<void>;
   facebookSignIn: () => Promise<void>;
   appleSignIn: () => Promise<void>;
+  hasRole: (requiredRole: UserRole | UserRole[]) => boolean;
+  updateUserRole?: (userId: string, role: UserRole) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,7 +48,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -79,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+      setProfile(data as Profile);
     } catch (error: any) {
       console.error('Error fetching profile:', error.message);
     }
@@ -232,6 +248,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const facebookSignIn = () => handleOAuthSignIn('facebook');
   const appleSignIn = () => handleOAuthSignIn('apple');
 
+  // New role-based function to check permissions
+  const hasRole = (requiredRole: UserRole | UserRole[]): boolean => {
+    if (!user || !profile) return false;
+    
+    // Convert to array for easier checking
+    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    
+    // Admin has access to everything
+    if (profile.role === 'admin') return true;
+    
+    // Check if user's role is in the required roles
+    return requiredRoles.includes(profile.role);
+  };
+
+  // Admin-only function to update user roles
+  const updateUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
+    if (!profile || profile.role !== 'admin') {
+      toast({
+        variant: "destructive",
+        title: "Permission denied",
+        description: "Only administrators can update user roles.",
+      });
+      return false;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('update_user_role', {
+        user_id: userId,
+        new_role: role
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Role updated",
+        description: `User role successfully updated to ${role}.`,
+      });
+      
+      return true;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to update role",
+        description: error.message || "An error occurred while updating the user role.",
+      });
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -246,6 +311,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         googleSignIn,
         facebookSignIn,
         appleSignIn,
+        hasRole,
+        updateUserRole,
       }}
     >
       {children}

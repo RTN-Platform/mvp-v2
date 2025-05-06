@@ -50,37 +50,39 @@ const UserManagement: React.FC = () => {
 
       if (error) throw error;
 
-      // For now we'll simulate the join with auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        // If admin API fails (as it likely will in most cases), just use profiles
-        setUsers(
-          data.map(profile => ({
-            id: profile.id,
-            email: "email@hidden.com", // Placeholder
-            profile: {
-              full_name: profile.full_name,
-              avatar_url: profile.avatar_url,
-              role: profile.role
-            }
-          }))
-        );
-      } else {
-        // Join profiles with auth users if we have access
-        const joinedUsers = data.map(profile => {
-          const authUser = authUsers.users.find(u => u.id === profile.id);
-          return {
-            id: profile.id,
-            email: authUser?.email || "email@hidden.com",
-            profile: {
-              full_name: profile.full_name,
-              avatar_url: profile.avatar_url,
-              role: profile.role
-            }
-          };
-        });
-        setUsers(joinedUsers);
+      if (data) {
+        // For now we'll simulate the join with auth.users
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          // If admin API fails (as it likely will in most cases), just use profiles
+          setUsers(
+            data.map(profile => ({
+              id: profile.id,
+              email: "email@hidden.com", // Placeholder
+              profile: {
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                role: profile.role as UserRole
+              }
+            }))
+          );
+        } else {
+          // Join profiles with auth users if we have access
+          const joinedUsers = data.map(profile => {
+            const authUser = authUsers.users.find(u => u.id === profile.id);
+            return {
+              id: profile.id,
+              email: authUser?.email || "email@hidden.com",
+              profile: {
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                role: profile.role as UserRole
+              }
+            };
+          });
+          setUsers(joinedUsers);
+        }
       }
     } catch (error: any) {
       console.error('Error fetching users:', error);

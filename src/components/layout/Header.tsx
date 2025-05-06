@@ -62,7 +62,6 @@ const Header: React.FC = () => {
             <NavIcon icon={<Users size={24} />} label="MY TRIBE" to="/tribe" />
             <NavIcon icon={<Heart size={24} />} label="FAVOURITES" to="/favourites" />
             <NavIcon icon={<MessageSquare size={24} />} label="MESSAGES" to="/messages" />
-            <NavIcon icon={<Bell size={24} />} label="NOTIFICATIONS" to="/notifications" />
           </nav>
         )}
 
@@ -120,12 +119,6 @@ const Header: React.FC = () => {
                   <Link to="/messages" className="w-full cursor-pointer">
                     <MessageSquare className="mr-2 h-4 w-4" />
                     <span>Messages</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="md:hidden">
-                  <Link to="/notifications" className="w-full cursor-pointer">
-                    <Bell className="mr-2 h-4 w-4" />
-                    <span>Notifications</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

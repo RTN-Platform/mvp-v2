@@ -1,5 +1,6 @@
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -9,6 +10,15 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Redirect from /notifications to /messages
+  useEffect(() => {
+    if (location.pathname === "/notifications") {
+      navigate("/messages", { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">

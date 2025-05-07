@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Map, Users, Heart, MessageSquare, User, LogOut, Edit, Settings, Shield, ListFilter } from "lucide-react";
+import { Map, Users, Heart, MessageSquare, User, LogOut, Edit, Settings, Shield, ListFilter, BarChart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
@@ -66,6 +65,9 @@ const Header: React.FC = () => {
             <NavIcon icon={<MessageSquare size={24} />} label="MESSAGES" to="/messages" />
             {isHost(profile) && (
               <NavIcon icon={<ListFilter size={24} />} label="MY LISTINGS" to="/my-listings" />
+            )}
+            {isAdmin(profile) && (
+              <NavIcon icon={<BarChart size={24} />} label="DASHBOARD" to="/admin/dashboard" />
             )}
           </nav>
         )}
@@ -152,6 +154,16 @@ const Header: React.FC = () => {
                     </Link>
                   </DropdownMenuItem>
                 )}
+
+                {/* Admin-only dashboard link for mobile */}
+                {isAdmin(profile) && (
+                  <DropdownMenuItem asChild className="md:hidden">
+                    <Link to="/admin/dashboard" className="w-full cursor-pointer">
+                      <BarChart className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 
                 {/* Admin-only menu items */}
                 {isAdmin(profile) && (
@@ -161,6 +173,12 @@ const Header: React.FC = () => {
                       <Link to="/admin" className="w-full cursor-pointer">
                         <Shield className="mr-2 h-4 w-4" />
                         <span>Admin Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/dashboard" className="w-full cursor-pointer">
+                        <BarChart className="mr-2 h-4 w-4" />
+                        <span>Analytics Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

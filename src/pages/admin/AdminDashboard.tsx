@@ -22,6 +22,21 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
+                <BarChart className="h-6 w-6 text-nature-700" />
+                Dashboard
+              </CardTitle>
+              <CardDescription>View platform metrics and analytics</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-end">
+              <Button asChild variant="secondary">
+                <Link to="/admin/dashboard">View Dashboard</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
                 <Users className="h-6 w-6 text-nature-700" />
                 User Management
               </CardTitle>
@@ -45,21 +60,6 @@ const AdminDashboard: React.FC = () => {
             <CardContent className="flex justify-end">
               <Button asChild variant="secondary">
                 <Link to="/admin/audit-logs">View Logs</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <BarChart className="h-6 w-6 text-nature-700" />
-                Analytics
-              </CardTitle>
-              <CardDescription>Review platform metrics and activity data</CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-end">
-              <Button asChild variant="secondary">
-                <Link to="/admin/analytics">View Analytics</Link>
               </Button>
             </CardContent>
           </Card>

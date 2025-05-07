@@ -19,6 +19,7 @@ import Favourites from "./pages/Wishlist"; // Component is still called Wishlist
 import CreateUpdate from "./pages/CreateUpdate";
 import BecomeHost from "./pages/BecomeHost";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import AuditLogs from "./pages/admin/AuditLogs";
 
@@ -104,6 +105,14 @@ const App = () => (
             element={
               <RoleGuard allowedRoles={['admin']}>
                 <AdminDashboard />
+              </RoleGuard>
+            } 
+          />
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <RoleGuard allowedRoles={['admin']}>
+                <Dashboard />
               </RoleGuard>
             } 
           />

@@ -28,6 +28,13 @@ type UserWithProfile = {
   };
 };
 
+type ProfileData = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+}
+
 const UserManagement: React.FC = () => {
   const { profile, updateUserRole } = useAuth();
   const [users, setUsers] = useState<UserWithProfile[]>([]);
@@ -56,8 +63,9 @@ const UserManagement: React.FC = () => {
         
         if (authError) {
           // If admin API fails (as it likely will in most cases), just use profiles
+          const profileData = data as ProfileData[];
           setUsers(
-            data.map(profile => ({
+            profileData.map(profile => ({
               id: profile.id,
               email: "email@hidden.com", // Placeholder
               profile: {
@@ -69,7 +77,8 @@ const UserManagement: React.FC = () => {
           );
         } else {
           // Join profiles with auth users if we have access
-          const joinedUsers = data.map(profile => {
+          const profileData = data as ProfileData[];
+          const joinedUsers = profileData.map(profile => {
             const authUser = authUsers.users.find(u => u.id === profile.id);
             return {
               id: profile.id,

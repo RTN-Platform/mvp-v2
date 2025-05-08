@@ -1,105 +1,50 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Search, UserPlus, UserX, ShieldCheck, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { UserRole } from "@/utils/roles";
-import { Spinner } from "@/components/ui/spinner";
 
-type UserWithProfile = {
+// Fix: Add proper typing for profile data
+type Profile = {
   id: string;
-  email: string;
-  profile: {
-    full_name: string | null;
-    avatar_url: string | null;
-    role: UserRole;
-  };
+  full_name: string;
+  username: string | null;
+  role: string;
+  created_at: string;
 };
 
-type ProfileData = {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: UserRole;
-}
-
 const UserManagement: React.FC = () => {
-  const { profile, updateUserRole } = useAuth();
-  const [users, setUsers] = useState<UserWithProfile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchUsers();
+    fetchProfiles();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchProfiles = async () => {
     setIsLoading(true);
     try {
-      // This assumes we've set up a view or function in Supabase to join users and profiles
-      // In a real app, you'd create a stored procedure or view for this
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, role');
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
-
-      if (data) {
-        // For now we'll simulate the join with auth.users
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          // If admin API fails (as it likely will in most cases), just use profiles
-          const profileData = data as ProfileData[];
-          setUsers(
-            profileData.map(profile => ({
-              id: profile.id,
-              email: "email@hidden.com", // Placeholder
-              profile: {
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                role: profile.role as UserRole
-              }
-            }))
-          );
-        } else {
-          // Join profiles with auth users if we have access
-          const profileData = data as ProfileData[];
-          const joinedUsers = profileData.map(profile => {
-            const authUser = authUsers.users.find(u => u.id === profile.id);
-            return {
-              id: profile.id,
-              email: authUser?.email || "email@hidden.com",
-              profile: {
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                role: profile.role as UserRole
-              }
-            };
-          });
-          setUsers(joinedUsers);
-        }
+      if (error) {
+        throw error;
       }
+
+      setProfiles(data || []);
     } catch (error: any) {
-      console.error('Error fetching users:', error);
       toast({
         variant: "destructive",
-        title: "Failed to load users",
+        title: "Error fetching users",
         description: error.message,
       });
     } finally {
@@ -107,121 +52,164 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    if (!updateUserRole) return;
+  const updateUserRole = async (userId: string, newRole: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc("update_user_role", {
+          user_id: userId,
+          new_role: newRole,
+        });
 
-    const success = await updateUserRole(userId, newRole);
-    if (success) {
-      // Update local state to reflect the change
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, profile: { ...user.profile, role: newRole } } 
-          : user
-      ));
+      if (error) throw error;
+
+      toast({
+        title: "Role updated",
+        description: "User role has been successfully updated.",
+      });
+
+      // Update the local state
+      setProfiles((prevProfiles) =>
+        prevProfiles.map((profile) =>
+          profile.id === userId ? { ...profile, role: newRole } : profile
+        )
+      );
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error updating role",
+        description: error.message,
+      });
     }
   };
 
-  const handleViewProfile = (userId: string) => {
-    navigate(`/admin/users/${userId}`);
-  };
-
-  const filteredUsers = users.filter(user => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (user.profile.full_name || "").toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredProfiles = profiles.filter(
+    (profile) =>
+      profile.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      profile.username?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <Button variant="outline" onClick={fetchUsers}>
-            Refresh
-          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+            <p className="text-gray-600">Manage and monitor platform users</p>
+          </div>
+          <div className="flex gap-4">
+            <Button variant="outline">
+              <UserPlus className="mr-2 h-4 w-4" /> Invite User
+            </Button>
+            <Button variant="destructive">
+              <UserX className="mr-2 h-4 w-4" /> Suspend User
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search users..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Users</CardTitle>
-            <div className="mt-4">
-              <Input
-                placeholder="Search by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
+            <CardTitle>Platform Users</CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Spinner size="lg" />
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b">
-                      <th className="py-3 px-4 font-medium">User</th>
-                      <th className="py-3 px-4 font-medium">Role</th>
-                      <th className="py-3 px-4 font-medium">Actions</th>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left pb-3 pl-4">Name</th>
+                    <th className="text-left pb-3">Username</th>
+                    <th className="text-left pb-3">Role</th>
+                    <th className="text-left pb-3">Joined</th>
+                    <th className="text-right pb-3 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4">
+                        Loading users...
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.map((user) => (
-                      <tr key={user.id} className="border-b">
-                        <td className="py-3 px-4">
-                          <button 
-                            onClick={() => handleViewProfile(user.id)}
-                            className="flex items-center space-x-3 hover:underline text-left"
+                  ) : filteredProfiles.length > 0 ? (
+                    filteredProfiles.map((profile) => (
+                      <tr key={profile.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 pl-4">
+                          <Link 
+                            to={`/admin/users/${profile.id}`} 
+                            className="font-medium text-blue-600 hover:underline"
                           >
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.profile.avatar_url || ""} />
-                              <AvatarFallback className="bg-nature-200 text-nature-700">
-                                {user.profile.full_name?.charAt(0) || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">
-                              {user.profile.full_name || "No name"}
-                            </span>
-                          </button>
+                            {profile.full_name || "Unnamed User"}
+                          </Link>
                         </td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-block px-2 py-1 rounded text-xs ${
-                            user.profile.role === 'admin' 
-                              ? 'bg-red-100 text-red-700' 
-                              : user.profile.role === 'host'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}>
-                            {user.profile.role}
+                        <td className="py-3">@{profile.username || "no_username"}</td>
+                        <td className="py-3">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              profile.role === "admin"
+                                ? "bg-purple-100 text-purple-800"
+                                : profile.role === "host"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {profile.role}
                           </span>
                         </td>
-                        <td className="py-3 px-4">
-                          <Select 
-                            defaultValue={user.profile.role} 
-                            onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
-                            disabled={user.id === profile?.id} // Can't change own role
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="visitor">Visitor</SelectItem>
-                              <SelectItem value="tribe">Tribe</SelectItem>
-                              <SelectItem value="host">Host</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <td className="py-3">
+                          {new Date(profile.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 text-right pr-4">
+                          <div className="flex justify-end gap-2">
+                            <Link to={`/admin/users/${profile.id}`}>
+                              <Button size="sm" variant="ghost">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            
+                            {profile.role !== "admin" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => updateUserRole(profile.id, "admin")}
+                                title="Make admin"
+                              >
+                                <ShieldCheck className="h-4 w-4 text-purple-500" />
+                              </Button>
+                            )}
+                            
+                            {profile.role !== "host" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => updateUserRole(profile.id, "host")}
+                                title="Make host"
+                              >
+                                <ShieldCheck className="h-4 w-4 text-blue-500" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="text-center py-4">
+                        No users found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </div>

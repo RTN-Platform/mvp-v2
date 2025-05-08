@@ -1,11 +1,31 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useForm } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building, Tent } from "lucide-react";
+import { Building, Tent, ArrowLeft, CalendarCheck, Upload, Info, MapPin, Plus, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import AccommodationForm from "@/components/listings/AccommodationForm";
+import ExperienceForm from "@/components/listings/ExperienceForm";
 
 const CreateListing: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -14,14 +34,35 @@ const CreateListing: React.FC = () => {
     initialType === "experience" ? "experience" : "accommodation"
   );
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  useEffect(() => {
+    // Redirect if user is not authenticated or not a host/admin
+    if (!user || (profile && profile.role !== 'host' && profile.role !== 'admin')) {
+      toast({
+        variant: "destructive",
+        title: "Access denied",
+        description: "You must be a host to create listings.",
+      });
+      navigate("/");
+    }
+  }, [user, profile, navigate]);
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Listing</h1>
-          <p className="text-gray-600">Add a new accommodation or experience to share with the community</p>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate("/my-listings")}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Listings
+          </Button>
+          <h1 className="text-3xl font-bold text-gray-900">Create New Listing</h1>
         </div>
+        <p className="text-gray-600">Add a new accommodation or experience to share with the community</p>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
           <TabsList className="mb-6">
@@ -34,35 +75,11 @@ const CreateListing: React.FC = () => {
           </TabsList>
 
           <TabsContent value="accommodation">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Accommodation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-6">
-                  The form to create a new accommodation will be implemented here.
-                  This form will include fields for property details, photos, pricing, 
-                  availability, house rules, and other necessary information.
-                </p>
-                <Button onClick={() => navigate("/my-listings")}>Back to Listings</Button>
-              </CardContent>
-            </Card>
+            <AccommodationForm />
           </TabsContent>
 
           <TabsContent value="experience">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Experience</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-6">
-                  The form to create a new experience will be implemented here.
-                  This form will include fields for activity description, schedule, location,
-                  capacity, pricing, imagery, and other necessary information.
-                </p>
-                <Button onClick={() => navigate("/my-listings")}>Back to Listings</Button>
-              </CardContent>
-            </Card>
+            <ExperienceForm />
           </TabsContent>
         </Tabs>
       </div>

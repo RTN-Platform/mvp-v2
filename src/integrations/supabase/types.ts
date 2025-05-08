@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accommodations: {
+        Row: {
+          amenities: string[] | null
+          bathrooms: number
+          bedrooms: number
+          cover_image: string | null
+          created_at: string
+          description: string
+          host_id: string
+          house_rules: string | null
+          id: string
+          images: string[] | null
+          is_published: boolean | null
+          location: string
+          max_guests: number
+          price_per_night: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          bathrooms: number
+          bedrooms: number
+          cover_image?: string | null
+          created_at?: string
+          description: string
+          host_id: string
+          house_rules?: string | null
+          id?: string
+          images?: string[] | null
+          is_published?: boolean | null
+          location: string
+          max_guests: number
+          price_per_night: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[] | null
+          bathrooms?: number
+          bedrooms?: number
+          cover_image?: string | null
+          created_at?: string
+          description?: string
+          host_id?: string
+          house_rules?: string | null
+          id?: string
+          images?: string[] | null
+          is_published?: boolean | null
+          location?: string
+          max_guests?: number
+          price_per_night?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -69,6 +126,90 @@ export type Database = {
           message?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      experiences: {
+        Row: {
+          capacity: number
+          cover_image: string | null
+          created_at: string
+          description: string
+          duration: number
+          host_id: string
+          id: string
+          images: string[] | null
+          included_items: string[] | null
+          is_published: boolean | null
+          location: string
+          price_per_person: number
+          requirements: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity: number
+          cover_image?: string | null
+          created_at?: string
+          description: string
+          duration: number
+          host_id: string
+          id?: string
+          images?: string[] | null
+          included_items?: string[] | null
+          is_published?: boolean | null
+          location: string
+          price_per_person: number
+          requirements?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          cover_image?: string | null
+          created_at?: string
+          description?: string
+          duration?: number
+          host_id?: string
+          id?: string
+          images?: string[] | null
+          included_items?: string[] | null
+          is_published?: boolean | null
+          location?: string
+          price_per_person?: number
+          requirements?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      listing_audit_logs: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          user_id?: string
         }
         Relationships: []
       }

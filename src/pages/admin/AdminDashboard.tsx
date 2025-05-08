@@ -3,7 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, FileText, BarChart } from "lucide-react";
+import { Shield, Users, FileText, BarChart, Home } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -45,6 +45,21 @@ const AdminDashboard: React.FC = () => {
             <CardContent className="flex justify-end">
               <Button asChild variant="secondary">
                 <Link to="/admin/users">Manage Users</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <Home className="h-6 w-6 text-nature-700" />
+                Listing Management
+              </CardTitle>
+              <CardDescription>View and manage all host listings</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-end">
+              <Button asChild variant="secondary">
+                <Link to="/my-listings">Manage Listings</Link>
               </Button>
             </CardContent>
           </Card>

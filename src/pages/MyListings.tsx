@@ -4,66 +4,64 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Edit, MapPin, Trash2, Plus, Building, Tent } from "lucide-react";
+import { Edit, MapPin, Trash2, Plus, Building, Tent, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { isHost } from "@/utils/roles";
+import { isHost, isAdmin } from "@/utils/roles";
 import { Spinner } from "@/components/ui/spinner";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type Accommodation = {
+  id: string;
+  title: string;
+  location: string;
+  description: string;
+  cover_image: string | null;
+  price_per_night: number;
+  is_published: boolean;
+  host_id: string;
+};
+
+type Experience = {
+  id: string;
+  title: string;
+  location: string;
+  description: string;
+  cover_image: string | null;
+  price_per_person: number;
+  is_published: boolean;
+  host_id: string;
+};
 
 const MyListings: React.FC = () => {
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"accommodations" | "experiences">("accommodations");
   const [isLoading, setIsLoading] = useState(true);
+  const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'accommodation' | 'experience' } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // This is just example data - in a real implementation, we'd fetch from Supabase
-  const [accommodations] = useState([
-    {
-      id: "acc1",
-      title: "Mountain View Cabin",
-      location: "Rocky Mountains, CO",
-      description: "A cozy cabin with stunning mountain views",
-      cover_image: "https://picsum.photos/seed/cabin1/400/300",
-      price_per_night: 150,
-      is_published: true
-    },
-    {
-      id: "acc2",
-      title: "Beachfront Bungalow",
-      location: "Malibu, CA",
-      description: "Luxurious bungalow steps from the ocean",
-      cover_image: "https://picsum.photos/seed/beach1/400/300",
-      price_per_night: 280,
-      is_published: false
-    }
-  ]);
-
-  const [experiences] = useState([
-    {
-      id: "exp1",
-      title: "Forest Meditation Retreat",
-      location: "Redwood National Park, CA",
-      description: "A guided meditation experience in ancient forests",
-      cover_image: "https://picsum.photos/seed/forest1/400/300",
-      price_per_person: 75,
-      is_published: true
-    }
-  ]);
+  const isAdminUser = profile ? isAdmin(profile) : false;
 
   useEffect(() => {
-    // In a real implementation, we'd fetch the user's listings from Supabase here
-    const fetchListings = async () => {
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-    };
+    if (user && profile) {
+      fetchListings();
+    }
     
-    fetchListings();
-    
-    // Redirect if user is not a host
+    // Redirect if user is not a host or admin
     if (user && profile && !isHost(profile)) {
       toast({
         variant: "destructive",
@@ -74,13 +72,123 @@ const MyListings: React.FC = () => {
     }
   }, [user, profile, navigate]);
 
+  const fetchListings = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch accommodations - admin sees all, host sees only their own
+      const accommodationsQuery = supabase
+        .from('accommodations')
+        .select('*');
+      
+      // For non-admin users, filter by host_id
+      if (!isAdminUser && profile) {
+        accommodationsQuery.eq('host_id', profile.id);
+      }
+
+      const { data: accommodationsData, error: accommodationsError } = await accommodationsQuery;
+
+      if (accommodationsError) throw accommodationsError;
+      setAccommodations(accommodationsData);
+
+      // Fetch experiences - admin sees all, host sees only their own
+      const experiencesQuery = supabase
+        .from('experiences')
+        .select('*');
+      
+      // For non-admin users, filter by host_id
+      if (!isAdminUser && profile) {
+        experiencesQuery.eq('host_id', profile.id);
+      }
+
+      const { data: experiencesData, error: experiencesError } = await experiencesQuery;
+
+      if (experiencesError) throw experiencesError;
+      setExperiences(experiencesData);
+    } catch (error: any) {
+      console.error('Error fetching listings:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to load listings",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (id: string, type: 'accommodation' | 'experience') => {
+    setItemToDelete({ id, type });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      const { id, type } = itemToDelete;
+      const table = type === 'accommodation' ? 'accommodations' : 'experiences';
+      
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update state to remove the deleted item
+      if (type === 'accommodation') {
+        setAccommodations(prev => prev.filter(item => item.id !== id));
+      } else {
+        setExperiences(prev => prev.filter(item => item.id !== id));
+      }
+
+      toast({
+        title: "Item deleted",
+        description: `The ${type} has been successfully deleted.`,
+      });
+    } catch (error: any) {
+      console.error('Error deleting item:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to delete item",
+        description: error.message,
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const getHostName = async (hostId: string): Promise<string> => {
+    if (!isAdminUser) return "You"; // If not admin, it's the current user
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', hostId)
+        .single();
+
+      if (error || !data) return "Unknown Host";
+      return data.full_name || "Unnamed Host";
+    } catch {
+      return "Unknown Host";
+    }
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">My Listings</h1>
-            <p className="text-gray-600">Manage your accommodations and experiences</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {isAdminUser ? "All Listings" : "My Listings"}
+            </h1>
+            <p className="text-gray-600">
+              {isAdminUser 
+                ? "View and manage all host listings across the platform" 
+                : "Manage your accommodations and experiences"}
+            </p>
           </div>
           <Button 
             className="bg-nature-600 hover:bg-nature-700"
@@ -112,13 +220,18 @@ const MyListings: React.FC = () => {
                     <Card key={accommodation.id}>
                       <div className="relative">
                         <img 
-                          src={accommodation.cover_image} 
+                          src={accommodation.cover_image || 'https://picsum.photos/seed/cabin1/400/300'} 
                           alt={accommodation.title} 
                           className="w-full h-48 object-cover rounded-t-lg"
                         />
                         {!accommodation.is_published && (
                           <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
                             Draft
+                          </div>
+                        )}
+                        {isAdminUser && (
+                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center">
+                            <span className="truncate max-w-[150px]">Host: {accommodation.host_id}</span>
                           </div>
                         )}
                       </div>
@@ -132,7 +245,11 @@ const MyListings: React.FC = () => {
                         <p className="mt-2 font-semibold">${accommodation.price_per_night} per night</p>
                       </CardContent>
                       <CardFooter className="flex justify-end gap-3 pt-0">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDeleteClick(accommodation.id, 'accommodation')}
+                        >
                           <Trash2 className="h-4 w-4 mr-1" /> Delete
                         </Button>
                         <Button variant="default" size="sm">
@@ -147,7 +264,9 @@ const MyListings: React.FC = () => {
                   <Building className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                   <h3 className="font-semibold text-lg mb-2">No Accommodations Yet</h3>
                   <p className="text-gray-600 mb-4">
-                    Start sharing your space with nature lovers around the world.
+                    {isAdminUser 
+                      ? "There are no accommodations listed on the platform yet."
+                      : "Start sharing your space with nature lovers around the world."}
                   </p>
                   <Button 
                     variant="default" 
@@ -170,13 +289,18 @@ const MyListings: React.FC = () => {
                     <Card key={experience.id}>
                       <div className="relative">
                         <img 
-                          src={experience.cover_image} 
+                          src={experience.cover_image || 'https://picsum.photos/seed/forest1/400/300'} 
                           alt={experience.title} 
                           className="w-full h-48 object-cover rounded-t-lg"
                         />
                         {!experience.is_published && (
                           <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
                             Draft
+                          </div>
+                        )}
+                        {isAdminUser && (
+                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center">
+                            <span className="truncate max-w-[150px]">Host: {experience.host_id}</span>
                           </div>
                         )}
                       </div>
@@ -190,7 +314,11 @@ const MyListings: React.FC = () => {
                         <p className="mt-2 font-semibold">${experience.price_per_person} per person</p>
                       </CardContent>
                       <CardFooter className="flex justify-end gap-3 pt-0">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleDeleteClick(experience.id, 'experience')}
+                        >
                           <Trash2 className="h-4 w-4 mr-1" /> Delete
                         </Button>
                         <Button variant="default" size="sm">
@@ -205,7 +333,9 @@ const MyListings: React.FC = () => {
                   <Tent className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                   <h3 className="font-semibold text-lg mb-2">No Experiences Yet</h3>
                   <p className="text-gray-600 mb-4">
-                    Share your expertise and connect travelers with nature.
+                    {isAdminUser 
+                      ? "There are no experiences listed on the platform yet."
+                      : "Share your expertise and connect travelers with nature."}
                   </p>
                   <Button 
                     variant="default"
@@ -219,6 +349,29 @@ const MyListings: React.FC = () => {
           </div>
         </Tabs>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this {itemToDelete?.type}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };

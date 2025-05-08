@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ const UserManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
@@ -119,10 +121,13 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleViewProfile = (userId: string) => {
+    navigate(`/admin/users/${userId}`);
+  };
+
   const filteredUsers = users.filter(user => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      user.email.toLowerCase().includes(searchLower) ||
       (user.profile.full_name || "").toLowerCase().includes(searchLower)
     );
   });
@@ -142,7 +147,7 @@ const UserManagement: React.FC = () => {
             <CardTitle>Users</CardTitle>
             <div className="mt-4">
               <Input
-                placeholder="Search by email or name..."
+                placeholder="Search by name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-md"
@@ -160,7 +165,6 @@ const UserManagement: React.FC = () => {
                   <thead>
                     <tr className="text-left border-b">
                       <th className="py-3 px-4 font-medium">User</th>
-                      <th className="py-3 px-4 font-medium">Email</th>
                       <th className="py-3 px-4 font-medium">Role</th>
                       <th className="py-3 px-4 font-medium">Actions</th>
                     </tr>
@@ -169,19 +173,21 @@ const UserManagement: React.FC = () => {
                     {filteredUsers.map((user) => (
                       <tr key={user.id} className="border-b">
                         <td className="py-3 px-4">
-                          <div className="flex items-center space-x-3">
+                          <button 
+                            onClick={() => handleViewProfile(user.id)}
+                            className="flex items-center space-x-3 hover:underline text-left"
+                          >
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={user.profile.avatar_url || ""} />
                               <AvatarFallback className="bg-nature-200 text-nature-700">
-                                {user.profile.full_name?.charAt(0) || user.email.charAt(0)}
+                                {user.profile.full_name?.charAt(0) || "U"}
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-medium">
                               {user.profile.full_name || "No name"}
                             </span>
-                          </div>
+                          </button>
                         </td>
-                        <td className="py-3 px-4">{user.email}</td>
                         <td className="py-3 px-4">
                           <span className={`inline-block px-2 py-1 rounded text-xs ${
                             user.profile.role === 'admin' 

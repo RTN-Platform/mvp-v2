@@ -21,7 +21,11 @@ import BecomeHost from "./pages/BecomeHost";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
+import UserProfileView from "./pages/admin/UserProfileView";
 import AuditLogs from "./pages/admin/AuditLogs";
+import MyListings from "./pages/MyListings";
+import CreateListing from "./pages/CreateListing";
+import ContentManagement from "./pages/admin/ContentManagement";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +102,22 @@ const App = () => (
               </RoleGuard>
             } 
           />
+          <Route 
+            path="/my-listings" 
+            element={
+              <RoleGuard allowedRoles={['host', 'admin']}>
+                <MyListings />
+              </RoleGuard>
+            } 
+          />
+          <Route 
+            path="/create-listing" 
+            element={
+              <RoleGuard allowedRoles={['host', 'admin']}>
+                <CreateListing />
+              </RoleGuard>
+            } 
+          />
           
           {/* Admin-only routes */}
           <Route 
@@ -125,10 +145,26 @@ const App = () => (
             } 
           />
           <Route 
+            path="/admin/users/:userId" 
+            element={
+              <RoleGuard allowedRoles={['admin']}>
+                <UserProfileView />
+              </RoleGuard>
+            } 
+          />
+          <Route 
             path="/admin/audit-logs" 
             element={
               <RoleGuard allowedRoles={['admin']}>
                 <AuditLogs />
+              </RoleGuard>
+            } 
+          />
+          <Route 
+            path="/admin/content" 
+            element={
+              <RoleGuard allowedRoles={['admin']}>
+                <ContentManagement />
               </RoleGuard>
             } 
           />

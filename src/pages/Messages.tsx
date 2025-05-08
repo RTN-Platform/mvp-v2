@@ -101,6 +101,7 @@ const Messages: React.FC = () => {
           filter: `invitee_id=eq.${user?.id}`
         },
         (payload) => {
+          console.log('New connection request received:', payload);
           fetchConnectionRequests();
         }
       )
@@ -112,6 +113,7 @@ const Messages: React.FC = () => {
           filter: `invitee_id=eq.${user?.id}`
         },
         (payload) => {
+          console.log('Connection request updated:', payload);
           fetchConnectionRequests();
         }
       )
@@ -124,12 +126,19 @@ const Messages: React.FC = () => {
 
   const handleAcceptRequest = async (connectionId: string, inviterName: string) => {
     try {
+      console.log(`Accepting connection request ${connectionId} from ${inviterName}`);
+      
       const { error } = await supabase
         .from('connections')
         .update({ status: 'accepted' })
         .eq('id', connectionId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error accepting connection request:', error);
+        throw error;
+      }
+      
+      console.log(`Connection request ${connectionId} accepted successfully`);
       
       // Update UI optimistically
       setConnectionRequests(prev => 
@@ -152,12 +161,19 @@ const Messages: React.FC = () => {
 
   const handleDeclineRequest = async (connectionId: string) => {
     try {
+      console.log(`Declining connection request ${connectionId}`);
+      
       const { error } = await supabase
         .from('connections')
         .update({ status: 'declined' })
         .eq('id', connectionId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error declining connection request:', error);
+        throw error;
+      }
+      
+      console.log(`Connection request ${connectionId} declined successfully`);
       
       // Update UI optimistically
       setConnectionRequests(prev => 

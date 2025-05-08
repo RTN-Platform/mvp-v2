@@ -5,8 +5,9 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, Search, Clock, User, Hash } from "lucide-react";
+import { MapPin, Search, Clock, User, Hash, Users, UserCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConnectModal } from "@/components/tribe/ConnectModal";
@@ -24,9 +25,10 @@ interface TribeMember {
 interface TribeMemberProps {
   member: TribeMember;
   onConnect: (memberId: string) => void;
+  isConnected?: boolean;
 }
 
-const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect }) => {
+const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect, isConnected = false }) => {
   const isPending = member.connection_status === 'pending';
   const displayName = member.full_name || 'No Name Provided';
   const location = member.location || 'Location Unknown';
@@ -68,7 +70,16 @@ const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect }) => {
         )}
       </div>
       
-      {isPending ? (
+      {isConnected ? (
+        <Button 
+          variant="outline" 
+          className="w-full border-green-300 text-green-700 bg-green-50 hover:bg-green-100 cursor-default"
+          disabled
+        >
+          <UserCheck size={16} className="mr-2" />
+          Connected
+        </Button>
+      ) : isPending ? (
         <Button 
           variant="outline" 
           className="w-full border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 cursor-default"
@@ -92,8 +103,10 @@ const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect }) => {
 
 const Tribe: React.FC = () => {
   const [tribeMembers, setTribeMembers] = useState<TribeMember[]>([]);
+  const [connectedMembers, setConnectedMembers] = useState<TribeMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"discover" | "connected">("discover");
   const [connectingTo, setConnectingTo] = useState<TribeMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
@@ -105,6 +118,7 @@ const Tribe: React.FC = () => {
     async function fetchProfiles() {
       try {
         setIsLoading(true);
+        console.log('Fetching tribe members and connections for user:', user.id);
         
         // Fetch all profiles except the current user's
         const { data: profiles, error: profilesError } = await supabase
@@ -112,32 +126,78 @@ const Tribe: React.FC = () => {
           .select('*')
           .neq('id', user.id);
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
         
-        // Fetch pending connection requests made by the current user
-        const { data: pendingConnections, error: connectionsError } = await supabase
+        console.log('Fetched profiles:', profiles?.length || 0);
+        
+        // Fetch all connections involving the current user
+        const { data: userConnections, error: connectionsError } = await supabase
           .from('connections')
-          .select('invitee_id, status')
-          .eq('inviter_id', user.id)
-          .eq('status', 'pending');
+          .select('*')
+          .or(`inviter_id.eq.${user.id},invitee_id.eq.${user.id}`);
         
-        if (connectionsError) throw connectionsError;
+        if (connectionsError) {
+          console.error('Error fetching connections:', connectionsError);
+          throw connectionsError;
+        }
+        
+        console.log('Fetched connections:', userConnections?.length || 0);
 
-        // Add connection status to each profile
-        const membersWithConnectionStatus = profiles.map((profile: any) => ({
-          id: profile.id,
-          full_name: profile.full_name,
-          location: profile.location,
-          avatar_url: profile.avatar_url,
-          interests: profile.interests || [],
-          connection_status: pendingConnections.find(
-            (conn: any) => conn.invitee_id === profile.id
-          )?.status || null
-        }));
+        // Process connections to identify connected and pending members
+        const connectedIds = new Set<string>();
+        const pendingIds = new Set<string>();
+        
+        userConnections?.forEach(connection => {
+          const otherUserId = connection.inviter_id === user.id 
+            ? connection.invitee_id 
+            : connection.inviter_id;
+          
+          if (connection.status === 'accepted') {
+            connectedIds.add(otherUserId);
+          } else if (connection.status === 'pending' && connection.inviter_id === user.id) {
+            pendingIds.add(otherUserId);
+          }
+        });
+        
+        console.log('Connected IDs:', Array.from(connectedIds));
+        console.log('Pending IDs:', Array.from(pendingIds));
 
-        setTribeMembers(membersWithConnectionStatus);
+        // Process profiles to separate connected and unconnected users
+        const connected: TribeMember[] = [];
+        const unconnected: TribeMember[] = [];
+        
+        profiles?.forEach(profile => {
+          const memberData = {
+            id: profile.id,
+            full_name: profile.full_name,
+            location: profile.location,
+            avatar_url: profile.avatar_url,
+            interests: profile.interests || [],
+            connection_status: pendingIds.has(profile.id) ? 'pending' : null
+          };
+          
+          if (connectedIds.has(profile.id)) {
+            connected.push(memberData);
+          } else {
+            unconnected.push(memberData);
+          }
+        });
+        
+        console.log('Connected members:', connected.length);
+        console.log('Unconnected members:', unconnected.length);
+
+        setConnectedMembers(connected);
+        setTribeMembers(unconnected);
       } catch (error) {
-        console.error('Error fetching profiles:', error);
+        console.error('Error processing profiles and connections:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load tribe members. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
@@ -155,7 +215,8 @@ const Tribe: React.FC = () => {
           table: 'connections'
         },
         (payload) => {
-          // Update UI when connections change
+          console.log('Connections table changed:', payload);
+          // Refresh data when connections change
           fetchProfiles();
         }
       )
@@ -166,15 +227,21 @@ const Tribe: React.FC = () => {
     };
   }, [user]);
 
-  // Filter tribe members based on search query
-  const filteredMembers = tribeMembers.filter(member => {
-    const searchString = searchQuery.toLowerCase();
+  // Filter members based on search query
+  const filteredMembers = activeTab === "connected" 
+    ? connectedMembers.filter(filterBySearchQuery)
+    : tribeMembers.filter(filterBySearchQuery);
+
+  function filterBySearchQuery(member: TribeMember) {
+    if (!searchQuery) return true;
+    
+    const searchLower = searchQuery.toLowerCase();
     return (
-      member.full_name?.toLowerCase().includes(searchString) ||
-      member.location?.toLowerCase().includes(searchString) ||
-      member.interests.some(interest => interest.toLowerCase().includes(searchString))
+      member.full_name?.toLowerCase().includes(searchLower) ||
+      member.location?.toLowerCase().includes(searchLower) ||
+      member.interests.some(interest => interest.toLowerCase().includes(searchLower))
     );
-  });
+  }
 
   const handleConnect = (memberId: string) => {
     const member = tribeMembers.find(m => m.id === memberId);
@@ -188,6 +255,9 @@ const Tribe: React.FC = () => {
     if (!user || !connectingTo) return;
     
     try {
+      console.log('Sending connection request to:', connectingTo.id);
+      console.log('Message:', message);
+      
       const { data, error } = await supabase
         .from('connections')
         .insert([
@@ -218,6 +288,8 @@ const Tribe: React.FC = () => {
         return;
       }
 
+      console.log('Connection request sent successfully');
+      
       // Optimistically update UI
       setTribeMembers(prev => prev.map(member => 
         member.id === connectingTo.id 
@@ -251,35 +323,85 @@ const Tribe: React.FC = () => {
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Search tribe members by name, location or interests"
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "discover" | "connected")}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="discover" className="flex items-center gap-2">
+              <Users size={16} /> Discover Members
+            </TabsTrigger>
+            <TabsTrigger value="connected" className="flex items-center gap-2">
+              <UserCheck size={16} /> My Connections
+            </TabsTrigger>
+          </TabsList>
 
-        {isLoading ? (
-          <div className="text-center py-8">Loading tribe members...</div>
-        ) : filteredMembers.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMembers.map((member) => (
-              <TribeMember 
-                key={member.id}
-                member={member}
-                onConnect={handleConnect}
-              />
-            ))}
+          {/* Search bar */}
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              type="text"
+              placeholder={`Search ${activeTab === 'connected' ? 'connections' : 'tribe members'} by name, location or interests`}
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        ) : (
-          <div className="text-center py-8">
-            {searchQuery ? 'No tribe members found for your search.' : 'No tribe members yet.'}
-          </div>
-        )}
+
+          <TabsContent value="discover">
+            {isLoading ? (
+              <div className="text-center py-8">Loading tribe members...</div>
+            ) : tribeMembers.length > 0 ? (
+              <>
+                {filteredMembers.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredMembers.map((member) => (
+                      <TribeMember 
+                        key={member.id}
+                        member={member}
+                        onConnect={handleConnect}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    No tribe members found for your search.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                No new tribe members to discover at the moment.
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="connected">
+            {isLoading ? (
+              <div className="text-center py-8">Loading your connections...</div>
+            ) : connectedMembers.length > 0 ? (
+              <>
+                {filteredMembers.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredMembers.map((member) => (
+                      <TribeMember 
+                        key={member.id}
+                        member={member}
+                        onConnect={handleConnect}
+                        isConnected={true}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    No connections found for your search.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                You don't have any connections yet. Discover and connect with other tribe members.
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {connectingTo && (

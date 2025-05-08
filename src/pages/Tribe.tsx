@@ -45,7 +45,7 @@ const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect, isConnecte
           </AvatarFallback>
         </Avatar>
         <div>
-          <Link to={`/profile/${member.id}`}>
+          <Link to={`/member/${member.id}`}>
             <h3 className="font-semibold text-gray-900 hover:text-nature-700">{displayName}</h3>
           </Link>
           <div className="flex items-center text-sm text-gray-500">
@@ -106,7 +106,7 @@ const Tribe: React.FC = () => {
   const [connectedMembers, setConnectedMembers] = useState<TribeMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"discover" | "connected">("discover");
+  const [activeTab, setActiveTab] = useState<"connected" | "discover">("connected"); // Changed default tab
   const [connectingTo, setConnectingTo] = useState<TribeMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuth();
@@ -323,13 +323,13 @@ const Tribe: React.FC = () => {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "discover" | "connected")}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "connected" | "discover")}>
           <TabsList className="mb-6">
-            <TabsTrigger value="discover" className="flex items-center gap-2">
-              <Users size={16} /> Discover Members
-            </TabsTrigger>
             <TabsTrigger value="connected" className="flex items-center gap-2">
               <UserCheck size={16} /> My Connections
+            </TabsTrigger>
+            <TabsTrigger value="discover" className="flex items-center gap-2">
+              <Users size={16} /> Discover Members
             </TabsTrigger>
           </TabsList>
 
@@ -344,34 +344,6 @@ const Tribe: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-
-          <TabsContent value="discover">
-            {isLoading ? (
-              <div className="text-center py-8">Loading tribe members...</div>
-            ) : tribeMembers.length > 0 ? (
-              <>
-                {filteredMembers.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredMembers.map((member) => (
-                      <TribeMember 
-                        key={member.id}
-                        member={member}
-                        onConnect={handleConnect}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    No tribe members found for your search.
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-8">
-                No new tribe members to discover at the moment.
-              </div>
-            )}
-          </TabsContent>
 
           <TabsContent value="connected">
             {isLoading ? (
@@ -398,6 +370,34 @@ const Tribe: React.FC = () => {
             ) : (
               <div className="text-center py-8">
                 You don't have any connections yet. Discover and connect with other tribe members.
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="discover">
+            {isLoading ? (
+              <div className="text-center py-8">Loading tribe members...</div>
+            ) : tribeMembers.length > 0 ? (
+              <>
+                {filteredMembers.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredMembers.map((member) => (
+                      <TribeMember 
+                        key={member.id}
+                        member={member}
+                        onConnect={handleConnect}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    No tribe members found for your search.
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                No new tribe members to discover at the moment.
               </div>
             )}
           </TabsContent>

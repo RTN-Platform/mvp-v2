@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -26,6 +25,7 @@ import AuditLogs from "./pages/admin/AuditLogs";
 import MyListings from "./pages/MyListings";
 import CreateListing from "./pages/CreateListing";
 import ContentManagement from "./pages/admin/ContentManagement";
+import MemberProfile from "./pages/MemberProfile";
 
 const queryClient = new QueryClient();
 
@@ -174,6 +174,11 @@ const App = () => (
           
           {/* 404 catch-all */}
           <Route path="*" element={<NotFound />} />
+          
+          {
+            path: "/member/:memberId",
+            element: <MemberProfile />
+          }
         </Routes>
       </BrowserRouter>
     </AuthProvider>

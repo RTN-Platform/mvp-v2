@@ -47,6 +47,9 @@ const EditProfile: React.FC = () => {
     },
   });
 
+  // Get first name for the bio label
+  const firstName = profile?.full_name?.split(' ')[0] || "You";
+
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
@@ -88,9 +91,15 @@ const EditProfile: React.FC = () => {
   const addInterest = () => {
     if (interestInput.trim() && !interestInput.includes(' ')) {
       const currentInterests = form.getValues('interests') || [];
-      if (!currentInterests.includes(interestInput.trim())) {
+      if (!currentInterests.includes(interestInput.trim()) && currentInterests.length < 3) {
         form.setValue('interests', [...currentInterests, interestInput.trim()]);
         setInterestInput("");
+      } else if (currentInterests.length >= 3) {
+        toast({
+          title: "Maximum interests reached",
+          description: "You can only add up to 3 interests.",
+          variant: "destructive"
+        });
       }
     }
   };
@@ -264,7 +273,10 @@ const EditProfile: React.FC = () => {
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bio</FormLabel>
+                        <FormLabel>About {firstName}</FormLabel>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Let fellow tribe members get to know more about you by sharing about your nature-based interests.
+                        </p>
                         <FormControl>
                           <Textarea 
                             placeholder="Tell us about yourself..." 
@@ -283,6 +295,9 @@ const EditProfile: React.FC = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Interests</FormLabel>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Add 3 of your main nature-based interests to let other tribe members find you based on your interests. You can change this anytime.
+                        </p>
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
                             <div className="relative flex-grow">
@@ -293,12 +308,14 @@ const EditProfile: React.FC = () => {
                                 value={interestInput}
                                 onChange={(e) => setInterestInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                disabled={field.value?.length >= 3}
                               />
                             </div>
                             <Button 
                               type="button"
                               variant="outline"
                               onClick={addInterest}
+                              disabled={field.value?.length >= 3}
                             >
                               Add
                             </Button>

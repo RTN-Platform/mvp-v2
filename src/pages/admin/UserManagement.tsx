@@ -12,9 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 // Fix: Add proper typing for profile data
 type Profile = {
   id: string;
-  full_name: string;
+  full_name: string | null;
   username: string | null;
-  role: string;
+  role: "visitor" | "tribe" | "host" | "admin";
   created_at: string;
 };
 
@@ -52,7 +52,7 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: "visitor" | "tribe" | "host" | "admin") => {
     try {
       const { data, error } = await supabase
         .rpc("update_user_role", {

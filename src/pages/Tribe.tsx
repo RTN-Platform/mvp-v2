@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MapPin, Search, Clock } from "lucide-react";
+import { MapPin, Search, Clock, User, Hash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface TribeMember {
   id: string;
-  full_name: string;
-  location: string;
-  avatar_url?: string;
+  full_name: string | null;
+  location: string | null;
+  avatar_url?: string | null;
   interests: string[];
   connection_status?: string;
 }
@@ -27,31 +28,44 @@ interface TribeMemberProps {
 
 const TribeMember: React.FC<TribeMemberProps> = ({ member, onConnect }) => {
   const isPending = member.connection_status === 'pending';
+  const displayName = member.full_name || 'No Name Provided';
+  const location = member.location || 'Location Unknown';
+  // Get up to 3 interests to display
+  const topInterests = member.interests?.slice(0, 3) || [];
   
   return (
     <Card className="p-4 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4 mb-3">
         <Avatar>
-          <AvatarImage src={member.avatar_url} alt={member.full_name} />
-          <AvatarFallback>{member.full_name.split(' ').map(part => part[0]).join('')}</AvatarFallback>
+          <AvatarImage src={member.avatar_url || undefined} alt={displayName} />
+          <AvatarFallback>
+            {displayName.split(' ').map(part => part[0]).join('') || <User size={16} />}
+          </AvatarFallback>
         </Avatar>
         <div>
-          <h3 className="font-semibold text-gray-900">{member.full_name}</h3>
+          <Link to={`/profile/${member.id}`}>
+            <h3 className="font-semibold text-gray-900 hover:text-nature-700">{displayName}</h3>
+          </Link>
           <div className="flex items-center text-sm text-gray-500">
             <MapPin size={14} className="mr-1" />
-            <span>{member.location}</span>
+            <span>{location}</span>
           </div>
         </div>
       </div>
       
       <div className="mb-4">
-        <div className="flex flex-wrap gap-2">
-          {member.interests?.map((interest, index) => (
-            <span key={index} className="text-xs bg-nature-100 text-nature-800 px-2 py-1 rounded-full">
-              {interest}
-            </span>
-          ))}
-        </div>
+        {topInterests.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {topInterests.map((interest, index) => (
+              <span key={index} className="flex items-center text-xs bg-nature-100 text-nature-800 px-2 py-1 rounded-full">
+                <Hash className="h-3 w-3 mr-1" strokeWidth={2.5} />
+                {interest}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-500 italic">No interests shared yet</p>
+        )}
       </div>
       
       {isPending ? (
@@ -112,8 +126,8 @@ const Tribe: React.FC = () => {
         // Add connection status to each profile
         const membersWithConnectionStatus = profiles.map((profile: any) => ({
           id: profile.id,
-          full_name: profile.full_name || 'Anonymous User',
-          location: profile.location || 'Unknown Location',
+          full_name: profile.full_name,
+          location: profile.location,
           avatar_url: profile.avatar_url,
           interests: profile.interests || [],
           connection_status: pendingConnections.find(
@@ -156,8 +170,8 @@ const Tribe: React.FC = () => {
   const filteredMembers = tribeMembers.filter(member => {
     const searchString = searchQuery.toLowerCase();
     return (
-      member.full_name.toLowerCase().includes(searchString) ||
-      member.location.toLowerCase().includes(searchString) ||
+      member.full_name?.toLowerCase().includes(searchString) ||
+      member.location?.toLowerCase().includes(searchString) ||
       member.interests.some(interest => interest.toLowerCase().includes(searchString))
     );
   });
@@ -213,7 +227,7 @@ const Tribe: React.FC = () => {
       
       toast({
         title: "Connection Request Sent",
-        description: `Your connection request has been sent to ${connectingTo.full_name}.`,
+        description: `Your connection request has been sent to ${connectingTo.full_name || 'this user'}.`,
       });
       
       setIsModalOpen(false);

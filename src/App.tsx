@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -42,6 +43,8 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/experiences" element={<Experiences />} />
           <Route path="/experiences/:id" element={<ExperienceDetail />} />
+          {/* Member profile route */}
+          <Route path="/member/:memberId" element={<MemberProfile />} />
           
           {/* Routes requiring authentication (tribe, host, admin) */}
           <Route 
@@ -174,11 +177,6 @@ const App = () => (
           
           {/* 404 catch-all */}
           <Route path="*" element={<NotFound />} />
-          
-          {
-            path: "/member/:memberId",
-            element: <MemberProfile />
-          }
         </Routes>
       </BrowserRouter>
     </AuthProvider>

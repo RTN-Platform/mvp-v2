@@ -1,18 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DashboardStats, TimePeriod, timePeriodToInterval, timePeriodToDataPoints, formatDateByTimePeriod } from "./DashboardStats";
 import { 
   getTrendingContent, 
-  getRecentEngagement, 
+  getRecentEngagement,
   getContentAnalytics,
-  getRetentionMetrics,
-  TrendingContentItem, 
-  RecentEngagementItem,
-  ContentAnalyticsItem,
-  RetentionMetrics
-} from "@/utils/admin/dashboardRpc";
+  getRetentionMetrics 
+} from "@/utils/admin/analytics";
 
 export interface DashboardData extends DashboardStats {
   contentAnalytics: ContentAnalyticsItem[] | null;

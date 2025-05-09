@@ -1,36 +1,19 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter 
-} from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Spinner } from "@/components/ui/spinner";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Contact } from "@/types/message";
+import ContactItem from "./ContactItem";
+import ContactSearch from "./ContactSearch";
+import NewConversationDialog from "./NewConversationDialog";
+import EmptyContactsList from "./EmptyContactsList";
 
 interface ContactsListProps {
   selectedContactId: string | null;
   onSelectContact: (contactId: string) => void;
-}
-
-interface ConnectionProfile {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-}
-
-interface Connection {
-  connection_id: string;
-  connection: ConnectionProfile;
 }
 
 const ContactsList: React.FC<ContactsListProps> = ({ 
@@ -41,10 +24,8 @@ const ContactsList: React.FC<ContactsListProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
+  const [connections, setConnections] = useState<any[]>([]);
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -184,16 +165,16 @@ const ContactsList: React.FC<ContactsListProps> = ({
     }
   };
 
-  const handleStartConversation = async () => {
-    if (!selectedConnection) return;
+  const handleStartConversation = async (connectionId: string) => {
+    if (!user?.id || !connectionId) return;
     
     try {
       // Create a new message to start the conversation
       const { error } = await supabase
         .from('messages')
         .insert([{
-          sender_id: user?.id,
-          recipient_id: selectedConnection,
+          sender_id: user.id,
+          recipient_id: connectionId,
           subject: 'New Conversation',
           content: 'Hello! I wanted to start a conversation with you.',
           is_read: false,
@@ -204,11 +185,11 @@ const ContactsList: React.FC<ContactsListProps> = ({
       
       // Close dialog and refresh contacts
       setShowNewMessageDialog(false);
-      setSelectedConnection(null);
-      fetchContacts();
-      onSelectContact(selectedConnection);
+      await fetchContacts();
+      onSelectContact(connectionId);
     } catch (error) {
       console.error('Error starting conversation:', error);
+      throw error;
     }
   };
 
@@ -230,15 +211,10 @@ const ContactsList: React.FC<ContactsListProps> = ({
             <Plus className="h-5 w-5" />
           </Button>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search contacts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <ContactSearch 
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -249,119 +225,25 @@ const ContactsList: React.FC<ContactsListProps> = ({
         ) : filteredContacts.length > 0 ? (
           <ul>
             {filteredContacts.map((contact) => (
-              <li 
-                key={contact.id} 
-                onClick={() => onSelectContact(contact.id)}
-                className={`p-4 hover:bg-muted cursor-pointer border-b ${
-                  selectedContactId === contact.id ? 'bg-muted' : ''
-                } ${contact.unread ? 'bg-gray-50' : ''}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarImage src={contact.avatar || ''} alt={contact.name} />
-                    <AvatarFallback>{contact.name.substring(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between">
-                      <p className={`text-sm font-medium ${contact.unread ? 'font-bold' : ''}`}>
-                        {contact.name}
-                      </p>
-                      {contact.lastMessageTime && (
-                        <p className="text-xs text-gray-500">
-                          {new Date(contact.lastMessageTime).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">
-                      {contact.lastMessage}
-                    </p>
-                  </div>
-                  {contact.unread && (
-                    <div className="w-2 h-2 bg-nature-600 rounded-full"></div>
-                  )}
-                </div>
-              </li>
+              <ContactItem
+                key={contact.id}
+                contact={contact}
+                isSelected={selectedContactId === contact.id}
+                onSelect={onSelectContact}
+              />
             ))}
           </ul>
         ) : (
-          <div className="p-4 text-center text-gray-500">
-            {searchQuery ? (
-              <p>No contacts match your search.</p>
-            ) : (
-              <div>
-                <p className="mb-2">No messages yet.</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => navigate('/tribe')}
-                  className="text-xs"
-                >
-                  Connect with members
-                </Button>
-              </div>
-            )}
-          </div>
+          <EmptyContactsList searchQuery={searchQuery} />
         )}
       </div>
 
-      <Dialog open={showNewMessageDialog} onOpenChange={setShowNewMessageDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Start a New Conversation</DialogTitle>
-          </DialogHeader>
-          
-          <div className="py-4">
-            {connections.length > 0 ? (
-              <ul className="space-y-2 max-h-72 overflow-y-auto">
-                {connections.map((conn) => (
-                  <li 
-                    key={conn.connection_id}
-                    onClick={() => setSelectedConnection(conn.connection.id)}
-                    className={`p-3 rounded-md hover:bg-muted cursor-pointer flex items-center space-x-3 ${
-                      selectedConnection === conn.connection.id ? 'bg-muted' : ''
-                    }`}
-                  >
-                    <Avatar>
-                      <AvatarImage 
-                        src={conn.connection.avatar_url || ''} 
-                        alt={conn.connection.full_name || ''} 
-                      />
-                      <AvatarFallback>
-                        {conn.connection.full_name?.substring(0, 2) || '??'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{conn.connection.full_name || 'Unnamed User'}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-3">
-                  No connections found. Connect with members first.
-                </p>
-                <Button onClick={() => navigate('/tribe')} size="sm">
-                  Go to Tribe
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowNewMessageDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleStartConversation} 
-              disabled={!selectedConnection}
-            >
-              Start Conversation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewConversationDialog 
+        isOpen={showNewMessageDialog}
+        onClose={() => setShowNewMessageDialog(false)}
+        connections={connections}
+        onStartConversation={handleStartConversation}
+      />
     </div>
   );
 };

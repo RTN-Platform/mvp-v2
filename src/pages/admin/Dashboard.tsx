@@ -110,25 +110,44 @@ const Dashboard: React.FC = () => {
         userGrowth.push({ date: dayLabel, count: count || 0 });
       }
       
-      // Fetch top content by engagement (using audit logs as a proxy for engagement)
-      // Here we need to fix the query - removing the .group() method since it doesn't exist
-      // We'll use a different approach to get the top content
-      const { data: auditLogData, error: auditLogError } = await supabase
+      // Fetch top content by engagement metrics
+      // We'll use separate queries for entity counts and combine them
+      const { data: auditLogExperiences, error: experiencesAuditError } = await supabase
         .from('audit_logs')
-        .select('entity_id, entity_type, count(*)')
+        .select('entity_id, entity_type, count')
         .eq('action', 'view')
-        .or('entity_type.eq.experiences,entity_type.eq.accommodations')
-        .order('count', { ascending: false })
+        .eq('entity_type', 'experiences')
         .limit(5);
       
-      if (auditLogError) throw auditLogError;
+      if (experiencesAuditError) throw experiencesAuditError;
       
-      // Transform content data - in a real app you'd join with the actual content tables
-      const topContent = auditLogData?.map((item, index) => ({
+      const { data: auditLogAccommodations, error: accommodationsAuditError } = await supabase
+        .from('audit_logs')
+        .select('entity_id, entity_type, count')
+        .eq('action', 'view')
+        .eq('entity_type', 'accommodations')
+        .limit(5);
+      
+      if (accommodationsAuditError) throw accommodationsAuditError;
+      
+      // Combine and sort the results
+      let combinedContent = [
+        ...(auditLogExperiences || []), 
+        ...(auditLogAccommodations || [])
+      ];
+      
+      // Sort by engagement count
+      combinedContent.sort((a, b) => (b.count || 0) - (a.count || 0));
+      
+      // Take top 5
+      combinedContent = combinedContent.slice(0, 5);
+      
+      // Transform content data
+      const topContent = combinedContent.map((item, index) => ({
         title: `${item.entity_type === 'experiences' ? 'Experience' : 'Accommodation'} ${index + 1}`,
-        engagement: item.count,
+        engagement: item.count || 0,
         type: item.entity_type
-      })) || [];
+      }));
       
       // System health metrics - in a real app these would come from monitoring tools
       const systemHealth = {

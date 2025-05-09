@@ -344,46 +344,47 @@ export type Database = {
       }
     }
     Views: {
-      content_analytics_view: {
-        Row: {
-          content_type: string | null
-          event_count: number | null
-          event_day: string | null
-          event_type: string | null
-          unique_users: number | null
-        }
-        Relationships: []
-      }
-      recent_engagement_view: {
-        Row: {
-          count: number | null
-          event_type: string | null
-          hour: string | null
-        }
-        Relationships: []
-      }
-      trending_content_view: {
-        Row: {
-          content_id: string | null
-          content_type: string | null
-          engagement_count: number | null
-          title: string | null
-        }
-        Relationships: []
-      }
-      user_retention_view: {
-        Row: {
-          returning_users: number | null
-          total_users: number | null
-          week: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_connection_rate_limit: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      get_content_analytics: {
+        Args: { time_range?: string }
+        Returns: {
+          content_type: string
+          event_type: string
+          event_count: number
+          unique_users: number
+          event_day: string
+        }[]
+      }
+      get_recent_engagement: {
+        Args: { time_range?: string }
+        Returns: {
+          hour: string
+          event_type: string
+          count: number
+        }[]
+      }
+      get_retention_metrics: {
+        Args: { time_range?: string }
+        Returns: {
+          week: string
+          total_users: number
+          returning_users: number
+        }[]
+      }
+      get_trending_content: {
+        Args: { time_range?: string }
+        Returns: {
+          title: string
+          engagement_count: number
+          content_type: string
+          content_id: string
+        }[]
       }
       get_user_role: {
         Args: { user_id: string }

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export type TrendingContentItem = {
@@ -31,10 +30,9 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Using view instead of RPC function
+    // Call the RPC function directly instead of using the view
     const { data, error } = await supabase
-      .from('trending_content_view')
-      .select('*');
+      .rpc('get_trending_content', { time_range: timeRange });
     
     if (error) throw error;
     
@@ -57,10 +55,9 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using view instead of RPC function
+    // Call the RPC function directly instead of using the view
     const { data, error } = await supabase
-      .from('recent_engagement_view')
-      .select('*');
+      .rpc('get_recent_engagement', { time_range: timeRange });
     
     if (error) throw error;
     
@@ -81,10 +78,9 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using view instead of RPC function
+    // Call the RPC function directly instead of using the view
     const { data, error } = await supabase
-      .from('content_analytics_view')
-      .select('*');
+      .rpc('get_content_analytics', { time_range: timeRange });
     
     if (error) throw error;
     
@@ -108,10 +104,9 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using view instead of RPC function
+    // Call the RPC function directly instead of using the view
     const { data, error } = await supabase
-      .from('user_retention_view')
-      .select('*');
+      .rpc('get_retention_metrics', { time_range: timeRange });
     
     if (error) throw error;
     

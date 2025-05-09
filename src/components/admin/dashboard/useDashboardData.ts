@@ -3,11 +3,25 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DashboardStats, TimePeriod, timePeriodToInterval, timePeriodToDataPoints, formatDateByTimePeriod } from "./DashboardStats";
-import { getTrendingContent, getRecentEngagement, TrendingContentItem, RecentEngagementItem } from "@/utils/admin/dashboardRpc";
+import { 
+  getTrendingContent, 
+  getRecentEngagement, 
+  getContentAnalytics,
+  getRetentionMetrics,
+  TrendingContentItem, 
+  RecentEngagementItem,
+  ContentAnalyticsItem,
+  RetentionMetrics
+} from "@/utils/admin/dashboardRpc";
+
+export interface DashboardData extends DashboardStats {
+  contentAnalytics: ContentAnalyticsItem[] | null;
+  retentionMetrics: RetentionMetrics[] | null;
+}
 
 export const useDashboardData = () => {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('week');
 
@@ -143,6 +157,12 @@ export const useDashboardData = () => {
         };
       }
       
+      // Fetch content analytics data
+      const contentAnalytics = await getContentAnalytics(interval);
+      
+      // Fetch retention metrics
+      const retentionMetrics = await getRetentionMetrics(interval);
+      
       // Update state with all fetched data
       setStats({
         totalUsers: totalUsers || 0,
@@ -151,7 +171,9 @@ export const useDashboardData = () => {
         uptime,
         userGrowth,
         topContent,
-        systemHealth
+        systemHealth,
+        contentAnalytics,
+        retentionMetrics
       });
       
       setLoading(false);

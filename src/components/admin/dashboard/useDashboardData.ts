@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -6,7 +7,9 @@ import {
   getTrendingContent, 
   getRecentEngagement,
   getContentAnalytics,
-  getRetentionMetrics 
+  getRetentionMetrics,
+  ContentAnalyticsItem,
+  RetentionMetrics
 } from "@/utils/admin/analytics";
 
 export interface DashboardData extends DashboardStats {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -159,6 +158,10 @@ const MyListings: React.FC = () => {
     }
   };
 
+  const handleEditListing = (id: string, type: 'accommodation' | 'experience') => {
+    navigate(`/edit-listing/${type}/${id}`);
+  };
+
   const getHostName = async (hostId: string): Promise<string> => {
     if (!isAdminUser) return "You"; // If not admin, it's the current user
 
@@ -252,7 +255,11 @@ const MyListings: React.FC = () => {
                         >
                           <Trash2 className="h-4 w-4 mr-1" /> Delete
                         </Button>
-                        <Button variant="default" size="sm">
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => handleEditListing(accommodation.id, 'accommodation')}
+                        >
                           <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
                       </CardFooter>
@@ -321,7 +328,11 @@ const MyListings: React.FC = () => {
                         >
                           <Trash2 className="h-4 w-4 mr-1" /> Delete
                         </Button>
-                        <Button variant="default" size="sm">
+                        <Button 
+                          variant="default" 
+                          size="sm"
+                          onClick={() => handleEditListing(experience.id, 'experience')}
+                        >
                           <Edit className="h-4 w-4 mr-1" /> Edit
                         </Button>
                       </CardFooter>

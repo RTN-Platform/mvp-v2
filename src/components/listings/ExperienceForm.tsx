@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -28,6 +28,7 @@ import { MapPin, Calendar, Plus, Upload, X, Tent, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
 
 // Define the form schema
 const formSchema = z.object({
@@ -38,11 +39,20 @@ const formSchema = z.object({
   duration: z.number().int().positive({ message: "Duration must be at least 1 minute" }),
   capacity: z.number().int().min(1, { message: "Must accommodate at least 1 person" }),
   requirements: z.string().optional(),
+  is_published: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const ExperienceForm: React.FC = () => {
+interface ExperienceFormProps {
+  isEditing?: boolean;
+  initialData?: any;
+}
+
+const ExperienceForm: React.FC<ExperienceFormProps> = ({ 
+  isEditing = false, 
+  initialData = null 
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [images, setImages] = useState<File[]>([]);
@@ -63,8 +73,40 @@ const ExperienceForm: React.FC = () => {
       duration: 60, // Default duration in minutes
       capacity: 5,
       requirements: "",
+      is_published: false,
     },
   });
+  
+  // Load initial data if editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        title: initialData.title,
+        description: initialData.description,
+        location: initialData.location,
+        price_per_person: initialData.price_per_person,
+        duration: initialData.duration || 60,
+        capacity: initialData.capacity || 5,
+        requirements: initialData.requirements || "",
+        is_published: initialData.is_published || false,
+      });
+      
+      if (initialData.included_items && Array.isArray(initialData.included_items)) {
+        setIncludedItems(initialData.included_items);
+      }
+      
+      if (initialData.images && Array.isArray(initialData.images)) {
+        setImageUrls(initialData.images);
+      }
+      
+      if (initialData.cover_image && initialData.images) {
+        const coverIndex = initialData.images.findIndex((url: string) => url === initialData.cover_image);
+        if (coverIndex !== -1) {
+          setCoverImageIndex(coverIndex);
+        }
+      }
+    }
+  }, [isEditing, initialData, form]);
 
   const onSubmit = async (data: FormValues) => {
     if (!user) {
@@ -90,43 +132,63 @@ const ExperienceForm: React.FC = () => {
     try {
       const coverImage = imageUrls[coverImageIndex];
 
-      const { data: experienceData, error } = await supabase
-        .from("experiences")
-        .insert([
-          {
-            host_id: user.id,
-            title: data.title,
-            description: data.description,
-            location: data.location,
-            price_per_person: data.price_per_person,
-            duration: data.duration,
-            capacity: data.capacity,
-            included_items: includedItems,
-            requirements: data.requirements,
-            cover_image: coverImage,
-            images: imageUrls,
-            is_published: false,
-          },
-        ])
-        .select()
-        .single();
+      const experienceData = {
+        host_id: user.id,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        price_per_person: data.price_per_person,
+        duration: data.duration,
+        capacity: data.capacity,
+        included_items: includedItems,
+        requirements: data.requirements,
+        cover_image: coverImage,
+        images: imageUrls,
+        is_published: data.is_published,
+      };
 
-      if (error) {
-        throw error;
+      let result;
+      
+      if (isEditing && initialData) {
+        // Update existing experience
+        const { data: updatedData, error } = await supabase
+          .from("experiences")
+          .update(experienceData)
+          .eq('id', initialData.id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        result = updatedData;
+        
+        toast({
+          title: "Experience Updated",
+          description: "Your experience has been updated successfully!",
+        });
+      } else {
+        // Create new experience
+        const { data: newExperience, error } = await supabase
+          .from("experiences")
+          .insert([experienceData])
+          .select()
+          .single();
+          
+        if (error) throw error;
+        result = newExperience;
+        
+        toast({
+          title: "Experience Created",
+          description: "Your experience has been created successfully!",
+        });
       }
-
-      toast({
-        title: "Experience Created",
-        description: "Your experience has been created successfully!",
-      });
 
       navigate("/my-listings");
     } catch (error: any) {
-      console.error("Error creating experience:", error);
+      console.error("Error saving experience:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to create experience. Please try again.",
+        description: error.message || "Failed to save experience. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -221,11 +283,14 @@ const ExperienceForm: React.FC = () => {
     // Extract the file path from URL to delete from storage
     try {
       const urlToRemove = imageUrls[index];
-      // URLs are in format: https://[project].supabase.co/storage/v1/object/public/listings/[path]
-      const pathParts = urlToRemove.split('/listings/');
-      if (pathParts.length > 1) {
-        const filePath = `listings/${pathParts[1]}`;
-        await supabase.storage.from('listings').remove([filePath]);
+      // Only attempt to delete if it's a new upload (not existing images when editing)
+      if (!isEditing || !initialData?.images?.includes(urlToRemove)) {
+        // URLs are in format: https://[project].supabase.co/storage/v1/object/public/listings/[path]
+        const pathParts = urlToRemove.split('/listings/');
+        if (pathParts.length > 1) {
+          const filePath = `listings/${pathParts[1]}`;
+          await supabase.storage.from('listings').remove([filePath]);
+        }
       }
     } catch (error) {
       console.error('Error removing image from storage:', error);
@@ -309,6 +374,27 @@ const ExperienceForm: React.FC = () => {
                       Where does your experience take place?
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_published"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Published Status</FormLabel>
+                      <FormDescription>
+                        Set whether this experience should be visible to guests
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -582,7 +668,7 @@ const ExperienceForm: React.FC = () => {
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting || isUploading}>
-            {isSubmitting ? "Creating..." : "Create Experience"}
+            {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Experience" : "Create Experience")}
           </Button>
         </div>
       </form>

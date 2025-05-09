@@ -28,6 +28,7 @@ import { MapPin, Plus, Upload, X, Calendar, Building, Home } from "lucide-react"
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Switch } from "@/components/ui/switch";
 
 // Define the form schema
 const formSchema = z.object({
@@ -39,11 +40,20 @@ const formSchema = z.object({
   bathrooms: z.number().min(0.5, { message: "Must have at least 0.5 bathrooms" }),
   max_guests: z.number().int().min(1, { message: "Must accommodate at least 1 guest" }),
   house_rules: z.string().optional(),
+  is_published: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const AccommodationForm: React.FC = () => {
+interface AccommodationFormProps {
+  isEditing?: boolean;
+  initialData?: any;
+}
+
+const AccommodationForm: React.FC<AccommodationFormProps> = ({ 
+  isEditing = false, 
+  initialData = null 
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [images, setImages] = useState<File[]>([]);
@@ -65,8 +75,41 @@ const AccommodationForm: React.FC = () => {
       bathrooms: 1,
       max_guests: 1,
       house_rules: "",
+      is_published: false,
     },
   });
+
+  // Load initial data if editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        title: initialData.title,
+        description: initialData.description,
+        location: initialData.location,
+        price_per_night: initialData.price_per_night,
+        bedrooms: initialData.bedrooms,
+        bathrooms: initialData.bathrooms,
+        max_guests: initialData.max_guests,
+        house_rules: initialData.house_rules || "",
+        is_published: initialData.is_published || false,
+      });
+      
+      if (initialData.amenities && Array.isArray(initialData.amenities)) {
+        setAmenities(initialData.amenities);
+      }
+      
+      if (initialData.images && Array.isArray(initialData.images)) {
+        setImageUrls(initialData.images);
+      }
+      
+      if (initialData.cover_image && initialData.images) {
+        const coverIndex = initialData.images.findIndex((url: string) => url === initialData.cover_image);
+        if (coverIndex !== -1) {
+          setCoverImageIndex(coverIndex);
+        }
+      }
+    }
+  }, [isEditing, initialData, form]);
 
   const onSubmit = async (data: FormValues) => {
     if (!user) {
@@ -91,45 +134,65 @@ const AccommodationForm: React.FC = () => {
 
     try {
       const coverImage = imageUrls[coverImageIndex];
+      
+      const accommodationData = {
+        host_id: user.id,
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        price_per_night: data.price_per_night,
+        bedrooms: data.bedrooms,
+        bathrooms: data.bathrooms,
+        max_guests: data.max_guests,
+        amenities: amenities,
+        house_rules: data.house_rules,
+        cover_image: coverImage,
+        images: imageUrls,
+        is_published: data.is_published,
+      };
 
-      const { data: accommodationData, error } = await supabase
-        .from("accommodations")
-        .insert([
-          {
-            host_id: user.id,
-            title: data.title,
-            description: data.description,
-            location: data.location,
-            price_per_night: data.price_per_night,
-            bedrooms: data.bedrooms,
-            bathrooms: data.bathrooms,
-            max_guests: data.max_guests,
-            amenities: amenities,
-            house_rules: data.house_rules,
-            cover_image: coverImage,
-            images: imageUrls,
-            is_published: false,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
+      let result;
+      
+      if (isEditing && initialData) {
+        // Update existing listing
+        const { data: updatedData, error } = await supabase
+          .from("accommodations")
+          .update(accommodationData)
+          .eq('id', initialData.id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        result = updatedData;
+        
+        toast({
+          title: "Accommodation Updated",
+          description: "Your accommodation has been updated successfully!",
+        });
+      } else {
+        // Create new listing
+        const { data: newAccommodation, error } = await supabase
+          .from("accommodations")
+          .insert([accommodationData])
+          .select()
+          .single();
+          
+        if (error) throw error;
+        result = newAccommodation;
+        
+        toast({
+          title: "Accommodation Created",
+          description: "Your accommodation has been created successfully!",
+        });
       }
-
-      toast({
-        title: "Accommodation Created",
-        description: "Your accommodation has been created successfully!",
-      });
 
       navigate("/my-listings");
     } catch (error: any) {
-      console.error("Error creating accommodation:", error);
+      console.error("Error saving accommodation:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to create accommodation. Please try again.",
+        description: error.message || "Failed to save accommodation. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -224,11 +287,14 @@ const AccommodationForm: React.FC = () => {
     // Extract the file path from URL to delete from storage
     try {
       const urlToRemove = imageUrls[index];
-      // URLs are in format: https://[project].supabase.co/storage/v1/object/public/listings/[path]
-      const pathParts = urlToRemove.split('/listings/');
-      if (pathParts.length > 1) {
-        const filePath = `listings/${pathParts[1]}`;
-        await supabase.storage.from('listings').remove([filePath]);
+      // Only attempt to delete if it's a new upload (not existing images when editing)
+      if (!isEditing || !initialData?.images?.includes(urlToRemove)) {
+        // URLs are in format: https://[project].supabase.co/storage/v1/object/public/listings/[path]
+        const pathParts = urlToRemove.split('/listings/');
+        if (pathParts.length > 1) {
+          const filePath = `listings/${pathParts[1]}`;
+          await supabase.storage.from('listings').remove([filePath]);
+        }
       }
     } catch (error) {
       console.error('Error removing image from storage:', error);
@@ -312,6 +378,27 @@ const AccommodationForm: React.FC = () => {
                       Where is your accommodation located?
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_published"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Published Status</FormLabel>
+                      <FormDescription>
+                        Set whether this listing should be visible to guests
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -601,7 +688,7 @@ const AccommodationForm: React.FC = () => {
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting || isUploading}>
-            {isSubmitting ? "Creating..." : "Create Accommodation"}
+            {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Accommodation" : "Create Accommodation")}
           </Button>
         </div>
       </form>

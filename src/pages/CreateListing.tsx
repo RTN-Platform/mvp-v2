@@ -2,30 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import MainLayout from "@/components/layout/MainLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building, Tent, ArrowLeft, CalendarCheck, Upload, Info, MapPin, Plus, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { 
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Building, Tent, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AccommodationForm from "@/components/listings/AccommodationForm";
 import ExperienceForm from "@/components/listings/ExperienceForm";
+import { isHost } from "@/utils/roles";
 
 const CreateListing: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -38,7 +22,7 @@ const CreateListing: React.FC = () => {
 
   useEffect(() => {
     // Redirect if user is not authenticated or not a host/admin
-    if (!user || (profile && profile.role !== 'host' && profile.role !== 'admin')) {
+    if (!user || (profile && !isHost(profile))) {
       toast({
         variant: "destructive",
         title: "Access denied",

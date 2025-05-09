@@ -48,12 +48,13 @@ interface HostApplication {
   venue_location: string;
   venue_description: string;
   contact_email: string;
-  contact_phone?: string;
+  contact_phone?: string | null;
   status: 'pending' | 'approved' | 'declined';
-  admin_notes?: string;
+  admin_notes?: string | null;
   created_at: string;
   updated_at: string;
   applicant_name?: string;
+  verification_documents?: string[] | null;
 }
 
 const Messages: React.FC = () => {
@@ -201,6 +202,7 @@ const Messages: React.FC = () => {
       // Open the modal with the application data
       setSelectedApplication({
         ...application,
+        status: application.status as 'pending' | 'approved' | 'declined',
         applicant_name: profileData?.full_name || 'Unknown User'
       });
       setApplicationModalOpen(true);

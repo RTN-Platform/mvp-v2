@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/components/ui/use-toast";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, X, Loader } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface HostApplication {
   id: string;
@@ -16,46 +16,49 @@ interface HostApplication {
   venue_location: string;
   venue_description: string;
   contact_email: string;
-  contact_phone?: string;
+  contact_phone?: string | null;
   status: 'pending' | 'approved' | 'declined';
-  admin_notes?: string;
+  admin_notes?: string | null;
   created_at: string;
   updated_at: string;
   applicant_name?: string;
+  verification_documents?: string[] | null;
 }
 
 interface HostApplicationReviewModalProps {
   application: HostApplication | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApplicationUpdated: () => void;
+  onApplicationUpdated?: () => void;
 }
 
-const HostApplicationReviewModal: React.FC<HostApplicationReviewModalProps> = ({
+const HostApplicationReviewModal = ({
   application,
   open,
   onOpenChange,
-  onApplicationUpdated,
-}) => {
-  const [adminNotes, setAdminNotes] = useState<string>(application?.admin_notes || '');
-  const [isApproving, setIsApproving] = useState(false);
-  const [isDeclining, setIsDeclining] = useState(false);
+  onApplicationUpdated
+}: HostApplicationReviewModalProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [adminNotes, setAdminNotes] = useState("");
+  const { toast } = useToast();
 
-  React.useEffect(() => {
-    if (application) {
-      setAdminNotes(application.admin_notes || '');
+  const handleOpenChange = (open: boolean) => {
+    if (!open && !isSubmitting) {
+      onOpenChange(open);
+      setAdminNotes("");
     }
-  }, [application]);
+  };
 
-  const handleApprove = async () => {
+  const handleStatusUpdate = async (newStatus: 'approved' | 'declined') => {
     if (!application) return;
     
-    setIsApproving(true);
+    setIsSubmitting(true);
+    
     try {
       const { error } = await supabase
         .from('host_applications')
-        .update({ 
-          status: 'approved',
+        .update({
+          status: newStatus,
           admin_notes: adminNotes || null
         })
         .eq('id', application.id);
@@ -63,190 +66,134 @@ const HostApplicationReviewModal: React.FC<HostApplicationReviewModalProps> = ({
       if (error) throw error;
       
       toast({
-        title: "Application approved",
-        description: `${application.applicant_name || 'User'}'s application has been approved.`
+        title: `Application ${newStatus === 'approved' ? 'Approved' : 'Declined'}`,
+        description: newStatus === 'approved' 
+          ? `${application.applicant_name} has been approved as a host.`
+          : `${application.applicant_name}'s application has been declined.`,
       });
       
-      onApplicationUpdated();
-      onOpenChange(false);
+      // Close modal and reset notes
+      handleOpenChange(false);
+      
+      // Notify parent component that application was updated
+      if (onApplicationUpdated) {
+        onApplicationUpdated();
+      }
+      
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Error approving application",
-        description: error.message || "There was an error approving the application."
+        title: "Error updating application",
+        description: error.message || "Something went wrong. Please try again.",
       });
     } finally {
-      setIsApproving(false);
-    }
-  };
-  
-  const handleDecline = async () => {
-    if (!application) return;
-    
-    if (!adminNotes.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Admin notes required",
-        description: "Please provide feedback for why the application was declined."
-      });
-      return;
-    }
-    
-    setIsDeclining(true);
-    try {
-      const { error } = await supabase
-        .from('host_applications')
-        .update({ 
-          status: 'declined',
-          admin_notes: adminNotes
-        })
-        .eq('id', application.id);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Application declined",
-        description: `${application.applicant_name || 'User'}'s application has been declined.`
-      });
-      
-      onApplicationUpdated();
-      onOpenChange(false);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error declining application",
-        description: error.message || "There was an error declining the application."
-      });
-    } finally {
-      setIsDeclining(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (!application) return null;
+  if (!application) {
+    return null;
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl overflow-y-auto max-h-[85vh]">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Host Application Review</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Host Application Review</span>
+            <Badge className={
+              application.status === 'pending' ? "bg-amber-500" : 
+              application.status === 'approved' ? "bg-green-500" : 
+              "bg-red-500"
+            }>
+              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+            </Badge>
+          </DialogTitle>
           <DialogDescription>
-            Review the application from {application.applicant_name || 'Unknown User'}
+            Review host application details and approve or decline
           </DialogDescription>
         </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Applicant</h4>
+            <p className="text-base">{application.applicant_name}</p>
+          </div>
 
-        <div className="space-y-6 my-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-4">
-            <div>
-              <h3 className="font-medium text-sm text-gray-500">Venue Name</h3>
-              <p className="text-base">{application.venue_name}</p>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-sm text-gray-500">Venue Type</h3>
-              <p className="text-base">{application.venue_type}</p>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-sm text-gray-500">Location</h3>
-              <p className="text-base">{application.venue_location}</p>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-sm text-gray-500">Application Date</h3>
-              <p className="text-base">{new Date(application.created_at).toLocaleDateString()}</p>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-sm text-gray-500">Contact Email</h3>
-              <p className="text-base">{application.contact_email}</p>
-            </div>
-            
-            {application.contact_phone && (
-              <div>
-                <h3 className="font-medium text-sm text-gray-500">Contact Phone</h3>
-                <p className="text-base">{application.contact_phone}</p>
-              </div>
-            )}
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Venue Name</h4>
+            <p className="text-base">{application.venue_name}</p>
           </div>
-          
-          <div>
-            <h3 className="font-medium text-sm text-gray-500 mb-1">Description</h3>
-            <div className="bg-gray-50 p-3 rounded border">
-              <p className="whitespace-pre-wrap">{application.venue_description}</p>
+
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Venue Type</h4>
+            <p className="text-base">{application.venue_type}</p>
+          </div>
+
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Location</h4>
+            <p className="text-base">{application.venue_location}</p>
+          </div>
+
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Description</h4>
+            <p className="text-base whitespace-pre-wrap">{application.venue_description}</p>
+          </div>
+
+          <div className="grid gap-1">
+            <h4 className="text-sm font-medium">Contact Email</h4>
+            <p className="text-base">{application.contact_email}</p>
+          </div>
+
+          {application.contact_phone && (
+            <div className="grid gap-1">
+              <h4 className="text-sm font-medium">Contact Phone</h4>
+              <p className="text-base">{application.contact_phone}</p>
             </div>
-          </div>
-          
-          <div className="pt-2">
-            <Label htmlFor="adminNotes" className="mb-1 block">Admin Notes/Feedback:</Label>
-            <Textarea
-              id="adminNotes"
-              value={adminNotes}
-              onChange={(e) => setAdminNotes(e.target.value)}
-              placeholder="Provide feedback or notes (required if declining)"
-              className="resize-none h-24"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {application.status === 'pending' ? 
-                "These notes will be shared with the applicant if the application is declined." : 
-                "These notes have been shared with the applicant."}
-            </p>
-          </div>
+          )}
+
+          {application.status === 'pending' && (
+            <div className="grid gap-2 mt-4">
+              <h4 className="text-sm font-medium">Admin Notes (optional)</h4>
+              <p className="text-xs text-muted-foreground">These notes will be visible to the applicant if the application is declined</p>
+              <Textarea 
+                placeholder="Add notes about your decision..." 
+                value={adminNotes} 
+                onChange={(e) => setAdminNotes(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          )}
+
+          {application.admin_notes && application.status !== 'pending' && (
+            <div className="grid gap-1 mt-4">
+              <h4 className="text-sm font-medium">Admin Notes</h4>
+              <p className="text-base whitespace-pre-wrap">{application.admin_notes}</p>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="flex justify-between sm:justify-between flex-row">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Close
-          </Button>
-          
-          <div className="flex gap-2">
-            {application.status === 'pending' && (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-red-200 text-red-700 hover:bg-red-50"
-                  onClick={handleDecline}
-                  disabled={isDeclining || isApproving}
-                >
-                  {isDeclining ? (
-                    <>
-                      <Loader className="mr-2 h-4 w-4 animate-spin" />
-                      Declining...
-                    </>
-                  ) : (
-                    <>
-                      <X className="mr-2 h-4 w-4" />
-                      Decline
-                    </>
-                  )}
-                </Button>
-                
-                <Button
-                  type="button"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={handleApprove}
-                  disabled={isDeclining || isApproving}
-                >
-                  {isApproving ? (
-                    <>
-                      <Loader className="mr-2 h-4 w-4 animate-spin" />
-                      Approving...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="mr-2 h-4 w-4" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
+        {application.status === 'pending' && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button 
+              variant="outline" 
+              className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+              onClick={() => handleStatusUpdate('declined')}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <XCircle className="mr-2 h-4 w-4" />}
+              Decline Application
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => handleStatusUpdate('approved')}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+              Approve Application
+            </Button>
           </div>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

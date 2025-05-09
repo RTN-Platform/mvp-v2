@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,12 +40,12 @@ const BecomeHost: React.FC = () => {
       venueType: "",
       venueLocation: "",
       venueDescription: "",
-      contactEmail: profile?.email || "",
+      contactEmail: user?.email || "",
       contactPhone: "",
     },
   });
   
-  React.useEffect(() => {
+  useEffect(() => {
     // Check if user has an existing application
     const checkExistingApplication = async () => {
       if (!user) return;

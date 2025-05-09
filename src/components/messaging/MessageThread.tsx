@@ -1,255 +1,141 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from 'date-fns';
+import React, { useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface Message {
-  id: string;
-  sender_id: string;
-  recipient_id: string;
-  subject: string;
-  content: string;
-  is_read: boolean;
-  created_at: string;
-  is_system: boolean;
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  avatar_url: string | null;
-}
+import { Spinner } from "@/components/ui/spinner";
+import MessageComposer from "./MessageComposer";
+import { Message } from "@/types/message";
 
 interface MessageThreadProps {
-  recipientId: string;
-  messagesUpdated: number; // This will be updated when a new message is sent
+  messages: Message[];
+  isLoading: boolean;
+  contactName: string;
+  contactAvatar: string | null;
+  onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
+  currentUserId?: string;
 }
 
-const MessageThread: React.FC<MessageThreadProps> = ({ recipientId, messagesUpdated }) => {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+const MessageThread: React.FC<MessageThreadProps> = ({
+  messages,
+  isLoading,
+  contactName,
+  contactAvatar,
+  onSendMessage,
+  currentUserId,
+}) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch messages between current user and recipient
   useEffect(() => {
-    const fetchMessages = async () => {
-      if (!user?.id || !recipientId) return;
-      
-      setLoading(true);
-      
-      try {
-        // Get all messages between the two users
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-          .or(`sender_id.eq.${recipientId},recipient_id.eq.${recipientId}`)
-          .order('created_at', { ascending: true });
-        
-        if (error) throw error;
-        
-        if (data) {
-          // Filter messages that are either from user to recipient or from recipient to user
-          const filteredMessages = data.filter(msg => 
-            (msg.sender_id === user.id && msg.recipient_id === recipientId) || 
-            (msg.sender_id === recipientId && msg.recipient_id === user.id)
-          );
-          
-          setMessages(filteredMessages);
-          
-          // Mark messages as read if they were sent to the current user
-          const unreadMessageIds = filteredMessages
-            .filter(msg => msg.recipient_id === user.id && !msg.is_read)
-            .map(msg => msg.id);
-          
-          if (unreadMessageIds.length > 0) {
-            await supabase
-              .from('messages')
-              .update({ is_read: true })
-              .in('id', unreadMessageIds);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchMessages();
-  }, [user?.id, recipientId, messagesUpdated]);
+    scrollToBottom();
+  }, [messages]);
 
-  // Fetch user profiles for sender and recipient
-  useEffect(() => {
-    const fetchProfiles = async () => {
-      if (!user?.id || !recipientId) return;
-      
-      const userIds = [user.id, recipientId];
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', userIds);
-        
-        if (error) throw error;
-        
-        if (data) {
-          const profileMap: Record<string, Profile> = {};
-          data.forEach(profile => {
-            profileMap[profile.id] = profile;
-          });
-          setProfiles(profileMap);
-        }
-      } catch (error) {
-        console.error('Error fetching profiles:', error);
-      }
-    };
-    
-    fetchProfiles();
-  }, [user?.id, recipientId]);
-
-  // Format message timestamp
-  const formatMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return format(date, 'MMM d, yyyy h:mm a');
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
-  // Get user name from profile data
-  const getUserName = (userId: string) => {
-    if (profiles[userId]) {
-      return profiles[userId].full_name || 'Unknown User';
-    }
-    return 'Loading...';
-  };
-
-  // Get user avatar from profile data
-  const getUserAvatar = (userId: string) => {
-    if (profiles[userId]) {
-      return profiles[userId].avatar_url;
-    }
-    return null;
-  };
-
-  // Get user initials for avatar fallback
-  const getUserInitials = (userId: string) => {
-    if (profiles[userId] && profiles[userId].full_name) {
-      const nameParts = profiles[userId].full_name.split(' ');
-      if (nameParts.length >= 2) {
-        return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
-      }
-      return profiles[userId].full_name[0].toUpperCase();
-    }
-    return 'U';
-  };
-
-  const renderMessageContent = (content: string) => {
-    if (content.includes('Attachments:')) {
-      const [message, attachmentsSection] = content.split('Attachments:');
-      const attachmentUrls = attachmentsSection.trim().split('\n');
-      
-      return (
-        <>
-          <p className="whitespace-pre-wrap">{message}</p>
-          {attachmentUrls.length > 0 && (
-            <div className="mt-3">
-              <p className="font-medium text-sm mb-2">Attachments:</p>
-              <div className="flex flex-wrap gap-2">
-                {attachmentUrls.map((url, index) => {
-                  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-                  
-                  return isImage ? (
-                    <a 
-                      key={index} 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      <img 
-                        src={url} 
-                        alt={`Attachment ${index + 1}`} 
-                        className="h-24 w-24 object-cover rounded-md border hover:opacity-80 transition-opacity" 
-                      />
-                    </a>
-                  ) : (
-                    <a 
-                      key={index} 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="block bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors"
-                    >
-                      File {index + 1}
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </>
-      );
-    }
-    
-    return <p className="whitespace-pre-wrap">{content}</p>;
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-4 pt-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="flex gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-4 w-[250px]" />
-              <Skeleton className="h-16 w-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (messages.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        <p>No messages yet. Start the conversation by sending a message.</p>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {messages.map((message) => (
-        <div 
-          key={message.id}
-          className={`flex gap-4 ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}
-        >
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={getUserAvatar(message.sender_id) || undefined} />
-            <AvatarFallback>{getUserInitials(message.sender_id)}</AvatarFallback>
-          </Avatar>
-          
-          <div className={`space-y-1 max-w-[80%] ${message.sender_id === user?.id ? 'items-end' : ''}`}>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium">{getUserName(message.sender_id)}</span>
-              <span className="text-gray-500 text-xs">{formatMessageTime(message.created_at)}</span>
-            </div>
-            
-            <Card className={message.sender_id === user?.id ? 'bg-nature-50' : ''}>
-              <CardContent className="p-3">
-                <p className="font-semibold text-sm">{message.subject}</p>
-                {renderMessageContent(message.content)}
-              </CardContent>
-            </Card>
+    <div className="h-full flex flex-col">
+      <div className="p-4 border-b flex items-center">
+        <Avatar className="mr-3">
+          <AvatarImage src={contactAvatar || ""} alt={contactName} />
+          <AvatarFallback>{contactName.substring(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <h2 className="text-lg font-semibold">{contactName}</h2>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-20">
+            <Spinner size="md" />
           </div>
-        </div>
-      ))}
+        ) : messages.length > 0 ? (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.sender_id === currentUserId
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+                {message.sender_id !== currentUserId && (
+                  <Avatar className="mr-2 mt-1 h-8 w-8">
+                    <AvatarImage
+                      src={message.sender.avatar_url || ""}
+                      alt={message.sender.full_name}
+                    />
+                    <AvatarFallback>
+                      {message.sender.full_name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+
+                <div
+                  className={`max-w-[70%] rounded-lg p-3 ${
+                    message.sender_id === currentUserId
+                      ? "bg-nature-100 text-gray-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                  
+                  {/* Show attachments if any */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {message.attachments.map((url, index) => {
+                        // Check if it's an image
+                        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                        
+                        return isImage ? (
+                          <a 
+                            href={url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            key={index} 
+                            className="block"
+                          >
+                            <img 
+                              src={url} 
+                              alt="Attachment" 
+                              className="max-h-32 rounded border"
+                            />
+                          </a>
+                        ) : (
+                          <a 
+                            href={url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            key={index} 
+                            className="text-xs text-blue-600 underline block"
+                          >
+                            {url.split('/').pop() || 'Attachment'}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  <div className="text-xs text-gray-500 mt-1 text-right">
+                    {new Date(message.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 border-t">
+        <MessageComposer onSendMessage={onSendMessage} />
+      </div>
     </div>
   );
 };

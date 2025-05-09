@@ -95,12 +95,13 @@ const ContactsList: React.FC<ContactsListProps> = ({ onContactSelect, selectedCo
       if (!user?.id) return;
       
       try {
+        // Count unread messages by sender
         const { data, error } = await supabase
           .from('messages')
-          .select('sender_id, count')
+          .select('sender_id, count(*)')
           .eq('recipient_id', user.id)
           .eq('is_read', false)
-          .group('sender_id');
+          .groupBy('sender_id');
         
         if (error) throw error;
         

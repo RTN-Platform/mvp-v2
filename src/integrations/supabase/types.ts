@@ -344,7 +344,41 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      content_analytics_view: {
+        Row: {
+          content_type: string | null
+          event_count: number | null
+          event_day: string | null
+          event_type: string | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
+      recent_engagement_view: {
+        Row: {
+          count: number | null
+          event_type: string | null
+          hour: string | null
+        }
+        Relationships: []
+      }
+      trending_content_view: {
+        Row: {
+          content_id: string | null
+          content_type: string | null
+          engagement_count: number | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      user_retention_view: {
+        Row: {
+          returning_users: number | null
+          total_users: number | null
+          week: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_connection_rate_limit: {

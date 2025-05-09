@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from 'date-fns';
@@ -148,6 +148,57 @@ const MessageThread: React.FC<MessageThreadProps> = ({ recipientId, messagesUpda
     return 'U';
   };
 
+  const renderMessageContent = (content: string) => {
+    if (content.includes('Attachments:')) {
+      const [message, attachmentsSection] = content.split('Attachments:');
+      const attachmentUrls = attachmentsSection.trim().split('\n');
+      
+      return (
+        <>
+          <p className="whitespace-pre-wrap">{message}</p>
+          {attachmentUrls.length > 0 && (
+            <div className="mt-3">
+              <p className="font-medium text-sm mb-2">Attachments:</p>
+              <div className="flex flex-wrap gap-2">
+                {attachmentUrls.map((url, index) => {
+                  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                  
+                  return isImage ? (
+                    <a 
+                      key={index} 
+                      href={url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <img 
+                        src={url} 
+                        alt={`Attachment ${index + 1}`} 
+                        className="h-24 w-24 object-cover rounded-md border hover:opacity-80 transition-opacity" 
+                      />
+                    </a>
+                  ) : (
+                    <a 
+                      key={index} 
+                      href={url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block bg-gray-100 rounded-md p-2 hover:bg-gray-200 transition-colors"
+                    >
+                      File {index + 1}
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+    
+    return <p className="whitespace-pre-wrap">{content}</p>;
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 pt-4">
@@ -193,7 +244,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({ recipientId, messagesUpda
             <Card className={message.sender_id === user?.id ? 'bg-nature-50' : ''}>
               <CardContent className="p-3">
                 <p className="font-semibold text-sm">{message.subject}</p>
-                <p className="whitespace-pre-wrap mt-1">{message.content}</p>
+                {renderMessageContent(message.content)}
               </CardContent>
             </Card>
           </div>

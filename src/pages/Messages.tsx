@@ -18,6 +18,11 @@ import ContactsList from "@/components/messaging/ContactsList";
 import MessageThread from "@/components/messaging/MessageThread";
 import MessageComposer from "@/components/messaging/MessageComposer";
 
+interface MessageSender {
+  full_name: string;
+  avatar_url: string | null;
+}
+
 interface Message {
   id: string;
   sender_id: string | null;
@@ -29,10 +34,7 @@ interface Message {
   is_system: boolean;
   related_entity_type: string | null;
   related_entity_id: string | null;
-  sender?: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  sender?: MessageSender;
 }
 
 interface HostApplication {
@@ -86,28 +88,28 @@ const Messages: React.FC = () => {
         .from("messages")
         .select(`
           *,
-          sender:sender_id(full_name, avatar_url)
+          sender:profiles!messages_sender_id_fkey(full_name, avatar_url)
         `)
         .eq("recipient_id", user.id)
         .eq("is_system", false)
         .order("created_at", { ascending: false });
 
       if (regularError) throw regularError;
-      setMessages(regularMessages || []);
+      setMessages(regularMessages as Message[] || []);
 
       // Fetch system messages
       const { data: systemMsgs, error: systemError } = await supabase
         .from("messages")
         .select(`
           *,
-          sender:sender_id(full_name, avatar_url)
+          sender:profiles!messages_sender_id_fkey(full_name, avatar_url)
         `)
         .eq("recipient_id", user.id)
         .eq("is_system", true)
         .order("created_at", { ascending: false });
 
       if (systemError) throw systemError;
-      setSystemMessages(systemMsgs || []);
+      setSystemMessages(systemMsgs as Message[] || []);
 
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -158,7 +160,7 @@ const Messages: React.FC = () => {
           .from('host_applications')
           .select(`
             *,
-            applicant:user_id(full_name, avatar_url)
+            applicant:profiles!host_applications_user_id_fkey(full_name, avatar_url)
           `)
           .eq('id', message.related_entity_id)
           .single();
@@ -166,10 +168,11 @@ const Messages: React.FC = () => {
         if (error) throw error;
         
         if (data) {
-          setHostApplication(data);
+          const typedData = data as unknown as HostApplication;
+          setHostApplication(typedData);
           
           // Only open the modal automatically for admin users and pending applications
-          if (isAdminUser && data.status === 'pending') {
+          if (isAdminUser && typedData.status === 'pending') {
             setIsReviewModalOpen(true);
           }
         }
@@ -486,7 +489,7 @@ const Messages: React.FC = () => {
       {/* Host Application Review Modal */}
       {hostApplication && (
         <HostApplicationReviewModal
-          isOpen={isReviewModalOpen}
+          open={isReviewModalOpen}
           onClose={handleReviewModalClose}
           application={hostApplication}
         />

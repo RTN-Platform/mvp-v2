@@ -31,7 +31,7 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Using fetch with PostgreSQL function instead of rpc
+    // Using view instead of RPC function
     const { data, error } = await supabase
       .from('trending_content_view')
       .select('*');
@@ -57,7 +57,7 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using fetch with PostgreSQL function instead of rpc
+    // Using view instead of RPC function
     const { data, error } = await supabase
       .from('recent_engagement_view')
       .select('*');
@@ -81,7 +81,7 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using fetch with PostgreSQL function instead of rpc
+    // Using view instead of RPC function
     const { data, error } = await supabase
       .from('content_analytics_view')
       .select('*');
@@ -108,7 +108,7 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using fetch with PostgreSQL function instead of rpc
+    // Using view instead of RPC function
     const { data, error } = await supabase
       .from('user_retention_view')
       .select('*');

@@ -31,8 +31,11 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Using Postgres RPC function instead of direct view access
-    const { data, error } = await supabase.rpc('get_trending_content', { time_range: timeRange });
+    // Using direct query to the view instead of RPC call
+    const { data, error } = await supabase
+      .from('analytics.v_trending_content')
+      .select('content_id, content_type, title, engagement_count')
+      .limit(10);
     
     if (error) throw error;
     
@@ -61,10 +64,17 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using Postgres RPC function instead of direct view access
-    const { data, error } = await supabase.rpc('get_recent_engagement', { time_range: timeRange });
+    // Using direct query to the view instead of RPC call
+    const { data, error } = await supabase
+      .from('analytics.v_recent_engagement')
+      .select('hour, event_type, count')
+      .order('hour', { ascending: false });
     
     if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      return [];
+    }
     
     return data.map(item => ({
       hour: item.hour,
@@ -79,8 +89,11 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using Postgres RPC function
-    const { data, error } = await supabase.rpc('get_content_analytics', { time_range: timeRange });
+    // Using direct query to the view instead of RPC call
+    const { data, error } = await supabase
+      .from('analytics.v_content_analytics')
+      .select('content_type, event_type, event_count, unique_users, event_day')
+      .order('event_day', { ascending: false });
     
     if (error) throw error;
     
@@ -104,8 +117,11 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using Postgres RPC function 
-    const { data, error } = await supabase.rpc('get_retention_metrics', { time_range: timeRange });
+    // Using direct query to the view instead of RPC call
+    const { data, error } = await supabase
+      .from('analytics.v_user_retention')
+      .select('week, total_users, returning_users')
+      .order('week', { ascending: false });
     
     if (error) throw error;
     

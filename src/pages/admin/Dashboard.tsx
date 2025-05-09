@@ -111,15 +111,20 @@ const Dashboard: React.FC = () => {
       }
       
       // Fetch top content by engagement (using audit logs as a proxy for engagement)
-      const { data: contentData, error: contentError } = await supabase
+      // Here we need to fix the query - removing the .group() method since it doesn't exist
+      // We'll use a different approach to get the top content
+      const { data: auditLogData, error: auditLogError } = await supabase
         .from('audit_logs')
-        .select('entity_id, entity_type, count')
+        .select('entity_id, entity_type, count(*)')
         .eq('action', 'view')
         .or('entity_type.eq.experiences,entity_type.eq.accommodations')
-        .group('entity_id, entity_type');
+        .order('count', { ascending: false })
+        .limit(5);
+      
+      if (auditLogError) throw auditLogError;
       
       // Transform content data - in a real app you'd join with the actual content tables
-      const topContent = contentData?.slice(0, 5).map((item, index) => ({
+      const topContent = auditLogData?.map((item, index) => ({
         title: `${item.entity_type === 'experiences' ? 'Experience' : 'Accommodation'} ${index + 1}`,
         engagement: item.count,
         type: item.entity_type

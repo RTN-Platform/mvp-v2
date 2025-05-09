@@ -31,22 +31,16 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Using raw SQL query instead of table/view references to bypass TypeScript issues
+    // Using fetch with PostgreSQL function instead of rpc
     const { data, error } = await supabase
-      .rpc('get_trending_content')
-      .returns<any[]>();
+      .from('trending_content_view')
+      .select('*');
     
     if (error) throw error;
     
     if (!data || data.length === 0) {
       // Fallback for empty data
-      return [
-        { title: "Experience 1", engagement: 42, type: "experiences" },
-        { title: "Accommodation 1", engagement: 38, type: "accommodations" },
-        { title: "Experience 2", engagement: 29, type: "experiences" },
-        { title: "Accommodation 2", engagement: 23, type: "accommodations" },
-        { title: "Experience 3", engagement: 19, type: "experiences" }
-      ];
+      return generateFallbackTrendingContent();
     }
     
     return data.map(item => ({
@@ -63,15 +57,15 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using raw SQL query instead of table/view references to bypass TypeScript issues
+    // Using fetch with PostgreSQL function instead of rpc
     const { data, error } = await supabase
-      .rpc('get_recent_engagement')
-      .returns<any[]>();
+      .from('recent_engagement_view')
+      .select('*');
     
     if (error) throw error;
     
     if (!data || data.length === 0) {
-      return [];
+      return generateFallbackRecentEngagement();
     }
     
     return data.map(item => ({
@@ -87,10 +81,10 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using raw SQL query instead of table/view references to bypass TypeScript issues
+    // Using fetch with PostgreSQL function instead of rpc
     const { data, error } = await supabase
-      .rpc('get_content_analytics')
-      .returns<any[]>();
+      .from('content_analytics_view')
+      .select('*');
     
     if (error) throw error;
     
@@ -114,10 +108,10 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using raw SQL query instead of table/view references to bypass TypeScript issues
+    // Using fetch with PostgreSQL function instead of rpc
     const { data, error } = await supabase
-      .rpc('get_user_retention')
-      .returns<any[]>();
+      .from('user_retention_view')
+      .select('*');
     
     if (error) throw error;
     

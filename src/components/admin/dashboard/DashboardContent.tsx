@@ -5,14 +5,19 @@ import { PlatformOverviewCard } from "./PlatformOverviewCard";
 import { UserGrowthCard } from "./UserGrowthCard";
 import { TopContentCard } from "./TopContentCard";
 import { SystemHealthCard } from "./SystemHealthCard";
-import { DashboardStats } from "./DashboardStats";
+import { DashboardStats, TimePeriod } from "./DashboardStats";
 
 type DashboardContentProps = {
   loading: boolean;
   stats: DashboardStats | null;
+  timePeriod: TimePeriod;
 };
 
-export const DashboardContent: React.FC<DashboardContentProps> = ({ loading, stats }) => {
+export const DashboardContent: React.FC<DashboardContentProps> = ({ 
+  loading, 
+  stats,
+  timePeriod 
+}) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
@@ -38,11 +43,20 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({ loading, sta
         uptime={stats.uptime}
       />
 
-      <UserGrowthCard userGrowth={stats.userGrowth} />
+      <UserGrowthCard 
+        userGrowth={stats.userGrowth}
+        timePeriod={timePeriod}  
+      />
 
-      <TopContentCard topContent={stats.topContent} />
+      <TopContentCard 
+        topContent={stats.topContent} 
+        timePeriod={timePeriod}
+      />
 
-      <SystemHealthCard systemHealth={stats.systemHealth} />
+      <SystemHealthCard 
+        systemHealth={stats.systemHealth}
+        timePeriod={timePeriod}
+      />
     </div>
   );
 };

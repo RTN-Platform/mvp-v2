@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { TimePeriod } from "./DashboardStats";
 
 type TopContentItem = {
   title: string;
@@ -12,9 +13,22 @@ type TopContentItem = {
 
 type TopContentProps = {
   topContent: TopContentItem[];
+  timePeriod: TimePeriod;
 };
 
-export const TopContentCard: React.FC<TopContentProps> = ({ topContent }) => {
+export const TopContentCard: React.FC<TopContentProps> = ({ topContent, timePeriod }) => {
+  const getTimeDescription = () => {
+    switch (timePeriod) {
+      case 'today': return 'today';
+      case 'week': return 'this week';
+      case 'month': return 'this month';
+      case 'quarter': return 'this quarter';
+      case 'year': return 'this year';
+      case 'all': return 'all time';
+      default: return '';
+    }
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -22,7 +36,7 @@ export const TopContentCard: React.FC<TopContentProps> = ({ topContent }) => {
           <FileText className="h-6 w-6 text-nature-700" />
           Top Content
         </CardTitle>
-        <CardDescription>Most engaged listings</CardDescription>
+        <CardDescription>Most engaged listings {getTimeDescription()}</CardDescription>
       </CardHeader>
       <CardContent className="h-64">
         {topContent.length > 0 ? (

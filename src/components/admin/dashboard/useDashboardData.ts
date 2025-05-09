@@ -2,18 +2,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { DashboardStats } from "./DashboardStats";
-import { getTrendingContent, getRecentEngagement } from "@/utils/admin/dashboardRpc";
+import { DashboardStats, TimePeriod, timePeriodToInterval, timePeriodToDataPoints, formatDateByTimePeriod } from "./DashboardStats";
+import { getTrendingContent, getRecentEngagement, TrendingContentItem, RecentEngagementItem } from "@/utils/admin/dashboardRpc";
 
 export const useDashboardData = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('week');
 
   // Function to fetch dashboard statistics
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = async (period: TimePeriod = timePeriod) => {
     try {
       setRefreshing(true);
+      const interval = timePeriodToInterval(period);
       
       // Fetch total users
       const { count: totalUsers, error: usersError } = await supabase
@@ -22,15 +24,14 @@ export const useDashboardData = () => {
       
       if (usersError) throw usersError;
       
-      // Fetch new users this month
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
+      // Fetch new users within the selected time period
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(interval.split(' ')[0]));
       
       const { count: newUsersThisMonth, error: newUsersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', startOfMonth.toISOString());
+        .gte('created_at', startDate.toISOString());
       
       if (newUsersError) throw newUsersError;
       
@@ -52,34 +53,55 @@ export const useDashboardData = () => {
       // Simulate uptime calculation (in real app, would fetch from monitoring service)
       const uptime = 99.8;
       
-      // Fetch user growth data - last 7 days
+      // Fetch user growth data based on selected time period
       const userGrowth = [];
       const today = new Date();
+      const dataPoints = timePeriodToDataPoints(period);
       
-      for (let i = 6; i >= 0; i--) {
+      // Calculate interval unit (days, weeks, months)
+      let intervalUnit = 1; // days by default
+      if (period === 'quarter') intervalUnit = 7; // weeks
+      else if (period === 'year' || period === 'all') intervalUnit = 30; // months
+      
+      for (let i = dataPoints - 1; i >= 0; i--) {
         const date = new Date();
-        date.setDate(today.getDate() - i);
+        if (period === 'today') {
+          // For "today", use hourly intervals
+          date.setHours(today.getHours() - i);
+          date.setMinutes(0, 0, 0);
+        } else {
+          // For other periods, use calculated interval unit
+          date.setDate(today.getDate() - (i * intervalUnit));
+        }
         
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
+        const startOfInterval = new Date(date);
+        if (period === 'today') {
+          startOfInterval.setMinutes(0, 0, 0);
+        } else {
+          startOfInterval.setHours(0, 0, 0, 0);
+        }
         
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+        const endOfInterval = new Date(date);
+        if (period === 'today') {
+          endOfInterval.setMinutes(59, 59, 999);
+        } else {
+          endOfInterval.setHours(23, 59, 59, 999);
+        }
         
         const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
-          .gte('created_at', startOfDay.toISOString())
-          .lte('created_at', endOfDay.toISOString());
+          .gte('created_at', startOfInterval.toISOString())
+          .lte('created_at', endOfInterval.toISOString());
           
         if (error) throw error;
         
-        const dayLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
-        userGrowth.push({ date: dayLabel, count: count || 0 });
+        const dateLabel = formatDateByTimePeriod(date, period);
+        userGrowth.push({ date: dateLabel, count: count || 0 });
       }
       
-      // Fetch trending content
-      const trendingContent = await getTrendingContent();
+      // Fetch trending content for the selected time period
+      const trendingContent = await getTrendingContent(interval);
       
       // Use fallback data if needed
       const topContent = trendingContent || [
@@ -91,7 +113,7 @@ export const useDashboardData = () => {
       ];
       
       // Fetch recent engagement for system health
-      const recentEngagement = await getRecentEngagement();
+      const recentEngagement = await getRecentEngagement(interval);
       
       // Calculate system health metrics based on analytics data
       let systemHealth = {
@@ -100,19 +122,19 @@ export const useDashboardData = () => {
         queryLatency: 42   // ms (default)
       };
       
-      if (recentEngagement?.length) {
+      if (recentEngagement && recentEngagement.length > 0) {
         // Calculate more accurate system health metrics if data exists
-        const lastDay = recentEngagement.slice(0, 6); // Last 6 hours
+        const lastDay = recentEngagement.slice(0, 6); // Last 6 hours or data points
         
         // Example calculation - in reality these would be more sophisticated
-        const totalEvents = lastDay.reduce((sum, item) => sum + (item.count || 0), 0);
+        const totalEvents = lastDay.reduce((sum, item) => sum + item.count, 0);
         const avgResponseTime = totalEvents > 0 
-          ? lastDay.reduce((sum, item) => sum + (item.count || 0), 0) / lastDay.length * 2 + 130
+          ? lastDay.reduce((sum, item) => sum + item.count, 0) / lastDay.length * 2 + 130
           : 156;
         
         const errorEvents = lastDay
           .filter(item => item.event_type === 'error')
-          .reduce((sum, item) => sum + (item.count || 0), 0);
+          .reduce((sum, item) => sum + item.count, 0);
         
         systemHealth = {
           responseTime: Math.round(avgResponseTime || 156), 
@@ -142,15 +164,17 @@ export const useDashboardData = () => {
     }
   };
 
-  // Fetch data on component mount
+  // Update dashboard data when time period changes
   useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+    fetchDashboardStats(timePeriod);
+  }, [timePeriod]);
 
   return {
     loading,
     stats,
     refreshing,
-    fetchDashboardStats
+    fetchDashboardStats,
+    timePeriod,
+    setTimePeriod
   };
 };

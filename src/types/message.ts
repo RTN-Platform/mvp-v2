@@ -17,6 +17,7 @@ export interface Message {
   related_entity_id?: string | null;
   related_entity_type?: string | null;
   sender: MessageSender;
+  attachments?: string[]; // Add attachments field
 }
 
 export interface Contact {

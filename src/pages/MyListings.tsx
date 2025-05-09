@@ -1,25 +1,17 @@
+
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Edit, MapPin, Trash2, Plus, Building, Tent, AlertCircle } from "lucide-react";
+import { Building, Tent, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { isHost, isAdmin } from "@/utils/roles";
-import { Spinner } from "@/components/ui/spinner";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import DeleteConfirmationDialog from "@/components/listings/dialogs/DeleteConfirmationDialog";
+import AccommodationsTab from "@/components/listings/tabs/AccommodationsTab";
+import ExperiencesTab from "@/components/listings/tabs/ExperiencesTab";
 
 type Accommodation = {
   id: string;
@@ -162,23 +154,6 @@ const MyListings: React.FC = () => {
     navigate(`/edit-listing/${type}/${id}`);
   };
 
-  const getHostName = async (hostId: string): Promise<string> => {
-    if (!isAdminUser) return "You"; // If not admin, it's the current user
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', hostId)
-        .single();
-
-      if (error || !data) return "Unknown Host";
-      return data.full_name || "Unnamed Host";
-    } catch {
-      return "Unknown Host";
-    }
-  };
-
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -213,176 +188,34 @@ const MyListings: React.FC = () => {
           
           <div className="mt-6">
             <TabsContent value="accommodations">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Spinner size="lg" />
-                </div>
-              ) : accommodations.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {accommodations.map((accommodation) => (
-                    <Card key={accommodation.id}>
-                      <div className="relative">
-                        <img 
-                          src={accommodation.cover_image || 'https://picsum.photos/seed/cabin1/400/300'} 
-                          alt={accommodation.title} 
-                          className="w-full h-48 object-cover rounded-t-lg"
-                        />
-                        {!accommodation.is_published && (
-                          <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
-                            Draft
-                          </div>
-                        )}
-                        {isAdminUser && (
-                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center">
-                            <span className="truncate max-w-[150px]">Host: {accommodation.host_id}</span>
-                          </div>
-                        )}
-                      </div>
-                      <CardContent className="pt-4">
-                        <h3 className="font-semibold text-lg">{accommodation.title}</h3>
-                        <div className="flex items-center text-gray-500 text-sm mt-1 mb-2">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          <span>{accommodation.location}</span>
-                        </div>
-                        <p className="text-gray-700 line-clamp-2">{accommodation.description}</p>
-                        <p className="mt-2 font-semibold">${accommodation.price_per_night} per night</p>
-                      </CardContent>
-                      <CardFooter className="flex justify-end gap-3 pt-0">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteClick(accommodation.id, 'accommodation')}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={() => handleEditListing(accommodation.id, 'accommodation')}
-                        >
-                          <Edit className="h-4 w-4 mr-1" /> Edit
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <Building className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <h3 className="font-semibold text-lg mb-2">No Accommodations Yet</h3>
-                  <p className="text-gray-600 mb-4">
-                    {isAdminUser 
-                      ? "There are no accommodations listed on the platform yet."
-                      : "Start sharing your space with nature lovers around the world."}
-                  </p>
-                  <Button 
-                    variant="default" 
-                    onClick={() => navigate("/create-listing?type=accommodation")}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Accommodation
-                  </Button>
-                </div>
-              )}
+              <AccommodationsTab 
+                accommodations={accommodations}
+                isLoading={isLoading}
+                isAdminUser={isAdminUser}
+                onEditListing={handleEditListing}
+                onDeleteClick={handleDeleteClick}
+              />
             </TabsContent>
             
             <TabsContent value="experiences">
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <Spinner size="lg" />
-                </div>
-              ) : experiences.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {experiences.map((experience) => (
-                    <Card key={experience.id}>
-                      <div className="relative">
-                        <img 
-                          src={experience.cover_image || 'https://picsum.photos/seed/forest1/400/300'} 
-                          alt={experience.title} 
-                          className="w-full h-48 object-cover rounded-t-lg"
-                        />
-                        {!experience.is_published && (
-                          <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded">
-                            Draft
-                          </div>
-                        )}
-                        {isAdminUser && (
-                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center">
-                            <span className="truncate max-w-[150px]">Host: {experience.host_id}</span>
-                          </div>
-                        )}
-                      </div>
-                      <CardContent className="pt-4">
-                        <h3 className="font-semibold text-lg">{experience.title}</h3>
-                        <div className="flex items-center text-gray-500 text-sm mt-1 mb-2">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          <span>{experience.location}</span>
-                        </div>
-                        <p className="text-gray-700 line-clamp-2">{experience.description}</p>
-                        <p className="mt-2 font-semibold">${experience.price_per_person} per person</p>
-                      </CardContent>
-                      <CardFooter className="flex justify-end gap-3 pt-0">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleDeleteClick(experience.id, 'experience')}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={() => handleEditListing(experience.id, 'experience')}
-                        >
-                          <Edit className="h-4 w-4 mr-1" /> Edit
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <Tent className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <h3 className="font-semibold text-lg mb-2">No Experiences Yet</h3>
-                  <p className="text-gray-600 mb-4">
-                    {isAdminUser 
-                      ? "There are no experiences listed on the platform yet."
-                      : "Share your expertise and connect travelers with nature."}
-                  </p>
-                  <Button 
-                    variant="default"
-                    onClick={() => navigate("/create-listing?type=experience")}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Experience
-                  </Button>
-                </div>
-              )}
+              <ExperiencesTab 
+                experiences={experiences}
+                isLoading={isLoading}
+                isAdminUser={isAdminUser}
+                onEditListing={handleEditListing}
+                onDeleteClick={handleDeleteClick}
+              />
             </TabsContent>
           </div>
         </Tabs>
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              Confirm Deletion
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this {itemToDelete?.type}? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteConfirm}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmationDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        entityType={itemToDelete?.type}
+      />
     </MainLayout>
   );
 };

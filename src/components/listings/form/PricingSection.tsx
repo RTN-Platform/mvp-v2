@@ -13,16 +13,22 @@ import { AccommodationFormValues } from "./types";
 
 interface PricingSectionProps {
   form: UseFormReturn<AccommodationFormValues>;
+  pricingField?: "price_per_night" | "price_per_person";
+  label?: string;
 }
 
-const PricingSection: React.FC<PricingSectionProps> = ({ form }) => {
+const PricingSection: React.FC<PricingSectionProps> = ({ 
+  form, 
+  pricingField = "price_per_night",
+  label = "Price per night ($)"
+}) => {
   return (
     <FormField
       control={form.control}
-      name="price_per_night"
+      name={pricingField}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Price per night ($)</FormLabel>
+          <FormLabel>{label}</FormLabel>
           <FormControl>
             <Input
               type="number"

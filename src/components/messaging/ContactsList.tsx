@@ -22,6 +22,17 @@ interface ContactsListProps {
   onSelectContact: (contactId: string) => void;
 }
 
+interface ConnectionProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
+interface Connection {
+  connection_id: string;
+  connection: ConnectionProfile;
+}
+
 const ContactsList: React.FC<ContactsListProps> = ({ 
   selectedContactId, 
   onSelectContact 
@@ -30,7 +41,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewMessageDialog, setShowNewMessageDialog] = useState(false);
-  const [connections, setConnections] = useState<any[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,14 +59,12 @@ const ContactsList: React.FC<ContactsListProps> = ({
       const { data: sentMessages, error: sentError } = await supabase
         .from('messages')
         .select('recipient_id')
-        .eq('sender_id', user?.id)
-        .distinct();
+        .eq('sender_id', user?.id);
 
       const { data: receivedMessages, error: receivedError } = await supabase
         .from('messages')
         .select('sender_id')
-        .eq('recipient_id', user?.id)
-        .distinct();
+        .eq('recipient_id', user?.id);
 
       if (sentError) throw sentError;
       if (receivedError) throw receivedError;
@@ -125,28 +134,50 @@ const ContactsList: React.FC<ContactsListProps> = ({
   const openNewMessageDialog = async () => {
     try {
       // Get all connections (tribe members the user is connected to)
-      const { data: tribeConnections, error } = await supabase
-        .from('tribe_connections')
+      const { data, error } = await supabase
+        .from('connections')
         .select(`
-          connection_id,
-          connection:connection_id(
-            id,
-            full_name,
-            avatar_url
-          )
+          invitee_id,
+          inviter_id
         `)
-        .eq('user_id', user?.id)
+        .or(`invitee_id.eq.${user?.id},inviter_id.eq.${user?.id}`)
         .eq('status', 'connected');
 
       if (error) throw error;
       
-      // Filter out connections that already have a conversation
-      const existingContactIds = contacts.map(contact => contact.id);
-      const filteredConnections = tribeConnections?.filter(
-        conn => conn.connection && !existingContactIds.includes(conn.connection.id)
+      // Extract connected user IDs
+      const connectedUserIds = data?.map(conn => 
+        conn.invitee_id === user?.id ? conn.inviter_id : conn.invitee_id
       ) || [];
       
-      setConnections(filteredConnections);
+      // Filter out connections that already have a conversation
+      const existingContactIds = contacts.map(contact => contact.id);
+      const newConnectionIds = connectedUserIds.filter(id => !existingContactIds.includes(id));
+      
+      if (newConnectionIds.length > 0) {
+        // Get profile details for these connections
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', newConnectionIds);
+        
+        if (profileError) throw profileError;
+        
+        // Format the connections for display
+        const formattedConnections = profileData?.map(profile => ({
+          connection_id: profile.id,
+          connection: {
+            id: profile.id,
+            full_name: profile.full_name,
+            avatar_url: profile.avatar_url
+          }
+        })) || [];
+        
+        setConnections(formattedConnections);
+      } else {
+        setConnections([]);
+      }
+      
       setShowNewMessageDialog(true);
     } catch (error) {
       console.error('Error fetching connections:', error);
@@ -293,7 +324,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
                     <Avatar>
                       <AvatarImage 
                         src={conn.connection.avatar_url || ''} 
-                        alt={conn.connection.full_name} 
+                        alt={conn.connection.full_name || ''} 
                       />
                       <AvatarFallback>
                         {conn.connection.full_name?.substring(0, 2) || '??'}

@@ -47,30 +47,50 @@ const Messages = () => {
       // Get all messages between current user and selected contact
       const { data, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:sender_id(
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*, sender_id')
         .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedContactId}),and(sender_id.eq.${selectedContactId},recipient_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      // Convert the data to the Message type by ensuring the sender field is properly shaped
-      const typedMessages = data.map(msg => ({
-        ...msg,
-        sender: {
-          id: msg.sender.id,
-          full_name: msg.sender.full_name || 'Unknown User',
-          avatar_url: msg.sender.avatar_url
-        }
-      })) as Message[];
-
-      setMessages(typedMessages);
+      // If we have messages, fetch the sender info for each message
+      if (data && data.length > 0) {
+        const messagesWithSenders = await Promise.all(
+          data.map(async (msg) => {
+            // Get sender profile information
+            const { data: senderData, error: senderError } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .eq('id', msg.sender_id)
+              .single();
+            
+            if (senderError) {
+              console.error('Error fetching sender:', senderError);
+              return {
+                ...msg,
+                sender: {
+                  id: msg.sender_id,
+                  full_name: 'Unknown User',
+                  avatar_url: null
+                }
+              };
+            }
+            
+            return {
+              ...msg,
+              sender: {
+                id: senderData.id,
+                full_name: senderData.full_name || 'Unknown User',
+                avatar_url: senderData.avatar_url
+              }
+            };
+          })
+        );
+        
+        setMessages(messagesWithSenders as Message[]);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -152,30 +172,32 @@ const Messages = () => {
         attachments: attachmentUrls.length > 0 ? attachmentUrls : null
       };
       
-      const { data, error } = await supabase
+      const { data: messageData, error } = await supabase
         .from('messages')
         .insert([newMessage])
-        .select(`
-          *,
-          sender:sender_id(
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
+        .select()
         .single();
 
       if (error) throw error;
       
+      // Fetch the sender info
+      const { data: senderData, error: senderError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+        
+      if (senderError) throw senderError;
+      
       // Add the new message to the state
-      const typedMessage = {
-        ...data,
+      const typedMessage: Message = {
+        ...messageData,
         sender: {
-          id: data.sender.id,
-          full_name: data.sender.full_name || 'Unknown User',
-          avatar_url: data.sender.avatar_url
+          id: senderData.id,
+          full_name: senderData.full_name || 'Unknown User',
+          avatar_url: senderData.avatar_url
         }
-      } as Message;
+      };
       
       setMessages(prevMessages => [...prevMessages, typedMessage]);
     } catch (error) {

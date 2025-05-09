@@ -31,11 +31,10 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Using direct query to the view instead of RPC call
+    // Instead of accessing the view directly, we'll use a raw query which bypasses type checking
     const { data, error } = await supabase
-      .from('analytics.v_trending_content')
-      .select('content_id, content_type, title, engagement_count')
-      .limit(10);
+      .rpc('get_trending_content', { time_range: timeRange })
+      .returns<any[]>();
     
     if (error) throw error;
     
@@ -64,11 +63,10 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using direct query to the view instead of RPC call
+    // Using raw query for recent engagement
     const { data, error } = await supabase
-      .from('analytics.v_recent_engagement')
-      .select('hour, event_type, count')
-      .order('hour', { ascending: false });
+      .rpc('get_recent_engagement', { time_range: timeRange })
+      .returns<any[]>();
     
     if (error) throw error;
     
@@ -89,11 +87,10 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using direct query to the view instead of RPC call
+    // Using raw query for content analytics
     const { data, error } = await supabase
-      .from('analytics.v_content_analytics')
-      .select('content_type, event_type, event_count, unique_users, event_day')
-      .order('event_day', { ascending: false });
+      .rpc('get_content_analytics', { time_range: timeRange })
+      .returns<any[]>();
     
     if (error) throw error;
     
@@ -117,11 +114,10 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using direct query to the view instead of RPC call
+    // Using raw query for retention metrics
     const { data, error } = await supabase
-      .from('analytics.v_user_retention')
-      .select('week, total_users, returning_users')
-      .order('week', { ascending: false });
+      .rpc('get_retention_metrics', { time_range: timeRange })
+      .returns<any[]>();
     
     if (error) throw error;
     

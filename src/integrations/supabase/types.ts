@@ -285,6 +285,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_engagement_event: {
+        Args: { event_type: string; content_id: string; content_type: string }
+        Returns: string
+      }
+      record_page_view: {
+        Args: { page_path: string; content_id?: string; content_type?: string }
+        Returns: string
+      }
       update_user_role: {
         Args: {
           user_id: string

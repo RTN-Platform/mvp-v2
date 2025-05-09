@@ -183,6 +183,54 @@ export type Database = {
         }
         Relationships: []
       }
+      host_applications: {
+        Row: {
+          admin_notes: string | null
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+          venue_description: string
+          venue_location: string
+          venue_name: string
+          venue_type: string
+          verification_documents: string[] | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          venue_description: string
+          venue_location: string
+          venue_name: string
+          venue_type: string
+          verification_documents?: string[] | null
+        }
+        Update: {
+          admin_notes?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          venue_description?: string
+          venue_location?: string
+          venue_name?: string
+          venue_type?: string
+          verification_documents?: string[] | null
+        }
+        Relationships: []
+      }
       listing_audit_logs: {
         Row: {
           action: string
@@ -210,6 +258,45 @@ export type Database = {
           entity_type?: string
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean
+          is_system: boolean
+          recipient_id: string
+          related_entity_id: string | null
+          related_entity_type: string | null
+          sender_id: string | null
+          subject: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          is_system?: boolean
+          recipient_id: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          sender_id?: string | null
+          subject: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          is_system?: boolean
+          recipient_id?: string
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          sender_id?: string | null
+          subject?: string
         }
         Relationships: []
       }

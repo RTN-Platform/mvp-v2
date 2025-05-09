@@ -31,10 +31,11 @@ export type RetentionMetrics = {
 
 export async function getTrendingContent(timeRange: string = '7 days'): Promise<TrendingContentItem[] | null> {
   try {
-    // Instead of accessing the view directly, we'll use a raw query which bypasses type checking
+    // Using SQL query to bypass TypeScript checking issues
     const { data, error } = await supabase
-      .rpc('get_trending_content', { time_range: timeRange })
-      .returns<any[]>();
+      .from('analytics_trending_content')
+      .select('*')
+      .limit(10);
     
     if (error) throw error;
     
@@ -63,10 +64,11 @@ export async function getTrendingContent(timeRange: string = '7 days'): Promise<
 
 export async function getRecentEngagement(timeRange: string = '24 hours'): Promise<RecentEngagementItem[] | null> {
   try {
-    // Using raw query for recent engagement
+    // Using SQL query to bypass TypeScript checking issues
     const { data, error } = await supabase
-      .rpc('get_recent_engagement', { time_range: timeRange })
-      .returns<any[]>();
+      .from('analytics_recent_engagement')
+      .select('*')
+      .order('hour', { ascending: false });
     
     if (error) throw error;
     
@@ -87,10 +89,11 @@ export async function getRecentEngagement(timeRange: string = '24 hours'): Promi
 
 export async function getContentAnalytics(timeRange: string = '30 days'): Promise<ContentAnalyticsItem[] | null> {
   try {
-    // Using raw query for content analytics
+    // Using SQL query to bypass TypeScript checking issues
     const { data, error } = await supabase
-      .rpc('get_content_analytics', { time_range: timeRange })
-      .returns<any[]>();
+      .from('analytics_content_analytics')
+      .select('*')
+      .order('event_day', { ascending: false });
     
     if (error) throw error;
     
@@ -114,10 +117,11 @@ export async function getContentAnalytics(timeRange: string = '30 days'): Promis
 
 export async function getRetentionMetrics(timeRange: string = '90 days'): Promise<RetentionMetrics[] | null> {
   try {
-    // Using raw query for retention metrics
+    // Using SQL query to bypass TypeScript checking issues
     const { data, error } = await supabase
-      .rpc('get_retention_metrics', { time_range: timeRange })
-      .returns<any[]>();
+      .from('analytics_user_retention')
+      .select('*')
+      .order('week', { ascending: false });
     
     if (error) throw error;
     

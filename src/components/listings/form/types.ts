@@ -28,3 +28,5 @@ export const experienceFormSchema = z.object({
 
 export type AccommodationFormValues = z.infer<typeof accommodationFormSchema>;
 export type ExperienceFormValues = z.infer<typeof experienceFormSchema>;
+
+export type PriceFieldType = keyof (AccommodationFormValues & ExperienceFormValues);

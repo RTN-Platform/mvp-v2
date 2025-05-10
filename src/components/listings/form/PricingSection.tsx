@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { AccommodationFormValues } from "./types";
+import { AccommodationFormValues, ExperienceFormValues, PriceFieldType } from "./types";
 
 interface PricingSectionProps {
-  form: UseFormReturn<AccommodationFormValues>;
-  pricingField?: "price_per_night" | "price_per_person";
+  form: UseFormReturn<AccommodationFormValues | ExperienceFormValues>;
+  pricingField?: PriceFieldType;
   label?: string;
 }
 
@@ -27,7 +27,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
     <div className="space-y-4">
       <FormField
         control={form.control}
-        name={pricingField}
+        name={pricingField as any}
         render={({ field }) => (
           <FormItem>
             <FormLabel>{label}</FormLabel>
@@ -38,6 +38,7 @@ const PricingSection: React.FC<PricingSectionProps> = ({
                 step="0.01"
                 {...field}
                 onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                value={field.value?.toString() || "0"}
               />
             </FormControl>
             <FormMessage />

@@ -12,7 +12,7 @@ const VerticalImageGallery: React.FC<VerticalImageGalleryProps> = ({ images, alt
   if (!images || images.length === 0) {
     return (
       <div className={`rounded-lg bg-gray-100 flex items-center justify-center h-64 ${className}`}>
-        No images available
+        <p className="text-gray-500">No images available</p>
       </div>
     );
   }
@@ -32,6 +32,7 @@ const VerticalImageGallery: React.FC<VerticalImageGalleryProps> = ({ images, alt
             alt={`${alt} - Image ${index + 1}`}
             className="w-full h-auto rounded-lg object-cover"
             style={{ aspectRatio: '16/9' }}
+            loading="lazy"
           />
         </motion.div>
       ))}

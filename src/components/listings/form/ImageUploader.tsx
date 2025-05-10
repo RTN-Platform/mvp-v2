@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface ImageUploaderProps {
   imageUrls: string[];
@@ -29,16 +30,33 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   entityType,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Allowed image formats and sizes
+  const ALLOWED_FORMATS = ['jpg', 'jpeg', 'png', 'gif'];
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Check if user ID is available
+    if (!userId) {
+      setUploadError("User authentication required to upload images");
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upload images",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Check file sizes
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     for (let i = 0; i < files.length; i++) {
       if (files[i].size > MAX_FILE_SIZE) {
+        setUploadError(`File "${files[i].name}" exceeds the maximum file size of 5MB.`);
         toast({
           title: "File too large",
           description: `${files[i].name} exceeds the maximum file size of 5MB.`,
@@ -58,10 +76,10 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         const fileExt = file.name.split(".").pop()?.toLowerCase();
         
         // Check file format
-        if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileExt || '')) {
+        if (!ALLOWED_FORMATS.includes(fileExt || '')) {
           toast({
             title: "Invalid file format",
-            description: `${file.name} is not a supported image format.`,
+            description: `${file.name} is not a supported image format. Only JPG, JPEG, PNG and GIF are accepted.`,
             variant: "destructive",
           });
           continue;
@@ -75,6 +93,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           .upload(filePath, file);
 
         if (uploadError) {
+          console.error("Upload error:", uploadError);
+          setUploadError(`Error uploading ${file.name}: ${uploadError.message}`);
           throw uploadError;
         }
 
@@ -99,8 +119,9 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       // Clear the input
       e.target.value = "";
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading images:", error);
+      setUploadError(error.message || "Failed to upload one or more images");
       toast({
         title: "Upload failed",
         description: "Failed to upload one or more images. Please try again.",
@@ -160,9 +181,23 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             onChange={handleImageUpload}
             disabled={isUploading}
           />
-          <p className="mt-2 text-xs text-gray-500">
-            Allowed formats: JPG, PNG, GIF. Maximum size: 5MB per image.
-          </p>
+          
+          {/* Image requirements information */}
+          <div className="mt-2 p-3 bg-gray-50 rounded-md">
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Image Requirements:</h4>
+            <ul className="text-xs text-gray-500 list-disc pl-5">
+              <li>Allowed formats: JPG, JPEG, PNG, GIF</li>
+              <li>Maximum file size: 5MB per image</li>
+              <li>Recommended aspect ratio: 16:9</li>
+            </ul>
+          </div>
+
+          {uploadError && (
+            <Alert variant="destructive" className="mt-3">
+              <AlertTitle>Upload Error</AlertTitle>
+              <AlertDescription>{uploadError}</AlertDescription>
+            </Alert>
+          )}
         </div>
       </div>
 

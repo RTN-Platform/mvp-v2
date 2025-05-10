@@ -18,9 +18,9 @@ const PublishToggle: React.FC<PublishToggleProps> = ({ form, fieldName }) => {
       control={form.control}
       name={fieldName}
       render={({ field }) => (
-        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
           <div className="space-y-0.5">
-            <FormLabel className="text-base">Listing Status</FormLabel>
+            <FormLabel className="text-base font-medium">Listing Status</FormLabel>
             <FormDescription>
               {status ? 'Published - visible to all users' : 'Draft - only visible to you'}
             </FormDescription>
@@ -29,6 +29,7 @@ const PublishToggle: React.FC<PublishToggleProps> = ({ form, fieldName }) => {
             <Switch
               checked={field.value}
               onCheckedChange={field.onChange}
+              className="data-[state=checked]:bg-nature-600"
             />
           </FormControl>
         </FormItem>

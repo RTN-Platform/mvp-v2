@@ -19,16 +19,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Spinner } from "@/components/ui/spinner";
+
+interface Experience {
+  id: string;
+  title: string;
+  location: string;
+  description: string;
+  cover_image: string | null;
+  price_per_person: number;
+  is_published: boolean;
+  host_id: string;
+  created_at?: string;
+  images?: string[];
+  requirements?: string;
+  included_items?: string[];
+}
 
 interface ExperienceCardProps {
   id: string;
   title: string;
   location: string;
   image: string;
-  rating: number;
-  participants: number;
   price: string;
   tags: string[];
+  rating?: number;
 }
 
 const ExperienceCard: React.FC<ExperienceCardProps> = ({
@@ -36,7 +52,7 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
   title,
   location,
   image,
-  rating,
+  rating = 4.5,
   price,
   tags,
 }) => {
@@ -177,10 +193,12 @@ const ExperienceCard: React.FC<ExperienceCardProps> = ({
   );
 };
 
-const SearchSection: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortOrder, setSortOrder] = useState("popular");
-
+const SearchSection: React.FC<{
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  sortOrder: string;
+  setSortOrder: (value: string) => void;
+}> = ({ searchTerm, setSearchTerm, sortOrder, setSortOrder }) => {
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-8">
       <div className="relative flex-grow">
@@ -202,7 +220,7 @@ const SearchSection: React.FC = () => {
         <SelectContent>
           <SelectGroup>
             <SelectItem value="popular">Most Popular</SelectItem>
-            <SelectItem value="rating">Highest Rating</SelectItem>
+            <SelectItem value="newest">Newest First</SelectItem>
             <SelectItem value="price-low">Price: Low to High</SelectItem>
             <SelectItem value="price-high">Price: High to Low</SelectItem>
           </SelectGroup>
@@ -213,73 +231,81 @@ const SearchSection: React.FC = () => {
 };
 
 const Experiences: React.FC = () => {
-  const experiences = [
-    {
-      id: "hiking-banff",
-      title: "Guided Hiking Tour in Banff",
-      location: "Banff National Park, AB",
-      image: "https://images.unsplash.com/photo-1472396961693-142e6e269027?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80",
-      rating: 4.9,
-      participants: 4,
-      price: "$129/person",
-      tags: ["hiking", "mountains", "guided"],
-    },
-    {
-      id: "costa-rica-rainforest",
-      title: "Costa Rica Rainforest Experience",
-      location: "Costa Rica",
-      image: "https://images.unsplash.com/photo-1582562124811-c09040d0a901?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80",
-      rating: 4.8,
-      participants: 2,
-      price: "$259/person",
-      tags: ["rainforest", "wildlife", "adventure"],
-    },
-    {
-      id: "wildlife-photography",
-      title: "Wildlife Photography Workshop",
-      location: "Yellowstone National Park",
-      image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80",
-      rating: 4.7,
-      participants: 6,
-      price: "$179/person",
-      tags: ["photography", "wildlife", "workshop"],
-    },
-    {
-      id: "coastal-trail",
-      title: "Coastal Trail Expedition",
-      location: "Olympic National Park",
-      image: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80",
-      rating: 4.6,
-      participants: 3,
-      price: "$149/person",
-      tags: ["coastal", "hiking", "expedition"],
-    },
-    {
-      id: "desert-stargazing",
-      title: "Desert Stargazing Tour",
-      location: "Joshua Tree National Park",
-      image: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=700&q=80",
-      rating: 4.9,
-      participants: 8,
-      price: "$89/person",
-      tags: ["stargazing", "desert", "night"],
-    },
-    {
-      id: "mountain-yoga",
-      title: "Mountain Yoga Retreat",
-      location: "Aspen, Colorado",
-      image: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?auto=format&fit=crop&w=700&q=80",
-      rating: 4.8,
-      participants: 5,
-      price: "$299/person",
-      tags: ["yoga", "wellness", "mountains"],
-    },
-  ];
-
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [filteredExperiences, setFilteredExperiences] = useState<Experience[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("popular");
   const [displayCount, setDisplayCount] = useState(6);
+
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('experiences')
+          .select('*')
+          .eq('is_published', true);
+
+        if (error) throw error;
+        
+        setExperiences(data || []);
+        setFilteredExperiences(data || []);
+      } catch (error) {
+        console.error('Error fetching experiences:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExperiences();
+  }, []);
+
+  useEffect(() => {
+    // Filter experiences based on search term
+    let filtered = experiences;
+    
+    if (searchTerm) {
+      const lowerTerm = searchTerm.toLowerCase();
+      filtered = experiences.filter(exp => 
+        exp.title.toLowerCase().includes(lowerTerm) || 
+        exp.location.toLowerCase().includes(lowerTerm) || 
+        exp.description.toLowerCase().includes(lowerTerm)
+      );
+    }
+    
+    // Sort experiences based on sort order
+    switch (sortOrder) {
+      case 'newest':
+        filtered = [...filtered].sort((a, b) => 
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        );
+        break;
+      case 'price-low':
+        filtered = [...filtered].sort((a, b) => a.price_per_person - b.price_per_person);
+        break;
+      case 'price-high':
+        filtered = [...filtered].sort((a, b) => b.price_per_person - a.price_per_person);
+        break;
+      default: // popular or any other value
+        // Default sorting can remain as-is or implement popularity logic if available
+        break;
+    }
+    
+    setFilteredExperiences(filtered);
+  }, [experiences, searchTerm, sortOrder]);
 
   const loadMore = () => {
     setDisplayCount(prev => prev + 3);
+  };
+
+  // Generate tags from included items or default tags if none
+  const getTagsFromExperience = (experience: Experience) => {
+    if (experience.included_items && Array.isArray(experience.included_items) && experience.included_items.length > 0) {
+      return experience.included_items.slice(0, 3);
+    }
+    // Default tags if no included items
+    return ["nature", "adventure", "outdoor"];
   };
 
   return (
@@ -287,30 +313,56 @@ const Experiences: React.FC = () => {
       <div className="py-4">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-            Explore our amazing accommodation and experiences
+            Discover Natural Experiences
           </h1>
           <p className="text-gray-600 mb-6">
-            Discover your next adventure and plan to immerse yourself in nature
+            Immerse yourself in nature with our curated outdoor experiences
           </p>
           
-          <SearchSection />
+          <SearchSection 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {experiences.slice(0, displayCount).map((experience, index) => (
-            <ExperienceCard key={index} {...experience} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <Spinner size="lg" />
+          </div>
+        ) : filteredExperiences.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredExperiences.slice(0, displayCount).map((experience) => (
+                <ExperienceCard
+                  key={experience.id}
+                  id={experience.id}
+                  title={experience.title}
+                  location={experience.location}
+                  image={experience.cover_image || 'https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=700&q=80'}
+                  price={`$${experience.price_per_person}/person`}
+                  tags={getTagsFromExperience(experience)}
+                />
+              ))}
+            </div>
 
-        {displayCount < experiences.length && (
-          <div className="mt-8 text-center">
-            <Button 
-              onClick={loadMore} 
-              variant="outline" 
-              className="border-nature-600 text-nature-700 hover:bg-nature-50"
-            >
-              Load More
-            </Button>
+            {displayCount < filteredExperiences.length && (
+              <div className="mt-8 text-center">
+                <Button 
+                  onClick={loadMore} 
+                  variant="outline" 
+                  className="border-nature-600 text-nature-700 hover:bg-nature-50"
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-10">
+            <h3 className="text-lg font-semibold mb-2">No experiences found</h3>
+            <p className="text-gray-500">Try adjusting your search criteria</p>
           </div>
         )}
       </div>

@@ -62,7 +62,7 @@ const HostInfoBadge: React.FC<HostInfoBadgeProps> = ({ hostId, className }) => {
         <AvatarImage src={hostAvatar || ''} alt={hostName} />
         <AvatarFallback>{hostName.charAt(0)}</AvatarFallback>
       </Avatar>
-      <span className="text-sm text-gray-600">{hostName}</span>
+      <span className="text-sm font-medium text-gray-700">{hostName}</span>
     </div>
   );
 };

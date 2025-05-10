@@ -35,6 +35,19 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Check file sizes
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: `${files[i].name} exceeds the maximum file size of 5MB.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsUploading(true);
 
     try {
@@ -42,7 +55,18 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileExt = file.name.split(".").pop();
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
+        
+        // Check file format
+        if (!['jpg', 'jpeg', 'png', 'gif'].includes(fileExt || '')) {
+          toast({
+            title: "Invalid file format",
+            description: `${file.name} is not a supported image format.`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = `${entityType}/${userId}/${fileName}`;
 
@@ -79,7 +103,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       console.error("Error uploading images:", error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload one or more images",
+        description: "Failed to upload one or more images. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -131,11 +155,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
             id="image-upload"
             type="file"
             multiple
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/gif"
             className="hidden"
             onChange={handleImageUpload}
             disabled={isUploading}
           />
+          <p className="mt-2 text-xs text-gray-500">
+            Allowed formats: JPG, PNG, GIF. Maximum size: 5MB per image.
+          </p>
         </div>
       </div>
 

@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Building } from "lucide-react";
+import { Home, Building, ArrowDown, ArrowUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +33,7 @@ import PropertyDetailsSection from "./form/PropertyDetailsSection";
 import PricingSection from "./form/PricingSection";
 import AmenitiesSection from "./form/AmenitiesSection";
 import HouseRulesSection from "./form/HouseRulesSection";
+import PublishToggle from "./form/PublishToggle";
 
 interface AccommodationFormProps {
   isEditing?: boolean;
@@ -151,10 +152,21 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
         if (error) throw error;
         result = updatedData;
         
-        toast({
-          title: "Accommodation Updated",
-          description: "Your accommodation has been updated successfully!",
-        });
+        // Show different toast messages based on publish state
+        if (data.is_published && !initialData.is_published) {
+          toast({
+            title: "Accommodation Published",
+            description: "Your accommodation is now live and visible to all users!",
+          });
+          
+          // In a real app, this would notify admins about the new published listing
+          // This is where you'd implement the admin notification
+        } else {
+          toast({
+            title: "Accommodation Updated",
+            description: "Your accommodation has been updated successfully!",
+          });
+        }
       } else {
         // Create new listing
         const { data: newAccommodation, error } = await supabase
@@ -166,10 +178,19 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
         if (error) throw error;
         result = newAccommodation;
         
-        toast({
-          title: "Accommodation Created",
-          description: "Your accommodation has been created successfully!",
-        });
+        if (data.is_published) {
+          toast({
+            title: "Accommodation Published",
+            description: "Your accommodation has been created and published successfully!",
+          });
+          
+          // In a real app, this would notify admins about the new published listing
+        } else {
+          toast({
+            title: "Accommodation Created",
+            description: "Your accommodation has been saved as a draft.",
+          });
+        }
       }
 
       navigate("/my-listings");
@@ -278,6 +299,19 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
             </CardHeader>
             <CardContent>
               <HouseRulesSection form={form} />
+            </CardContent>
+          </Card>
+
+          {/* Publishing Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Publishing Options</CardTitle>
+              <CardDescription>
+                Control the visibility of your listing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PublishToggle form={form} fieldName="is_published" />
             </CardContent>
           </Card>
         </div>

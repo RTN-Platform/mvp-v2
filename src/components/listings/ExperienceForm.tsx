@@ -25,6 +25,7 @@ import PricingSection from "./form/PricingSection";
 import IncludedItemsSection from "./form/IncludedItemsSection";
 import RequirementsSection from "./form/RequirementsSection";
 import ExperiencePhotosSection from "./form/ExperiencePhotosSection";
+import PublishToggle from "./form/PublishToggle";
 import { experienceFormSchema, ExperienceFormValues } from "./form/types";
 
 interface ExperienceFormProps {
@@ -144,10 +145,20 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
         if (error) throw error;
         result = updatedData;
         
-        toast({
-          title: "Experience Updated",
-          description: "Your experience has been updated successfully!",
-        });
+        // Show different toast messages based on publish state
+        if (data.is_published && !initialData.is_published) {
+          toast({
+            title: "Experience Published",
+            description: "Your experience is now live and visible to all users!",
+          });
+          
+          // This would trigger notification to admins in a real app
+        } else {
+          toast({
+            title: "Experience Updated",
+            description: "Your experience has been updated successfully!",
+          });
+        }
       } else {
         // Create new experience
         const { data: newExperience, error } = await supabase
@@ -159,10 +170,19 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
         if (error) throw error;
         result = newExperience;
         
-        toast({
-          title: "Experience Created",
-          description: "Your experience has been created successfully!",
-        });
+        if (data.is_published) {
+          toast({
+            title: "Experience Published",
+            description: "Your experience has been created and published successfully!",
+          });
+          
+          // This would trigger notification to admins in a real app
+        } else {
+          toast({
+            title: "Experience Created",
+            description: "Your experience has been saved as a draft.",
+          });
+        }
       }
 
       navigate("/my-listings");
@@ -274,6 +294,19 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
             </CardHeader>
             <CardContent>
               <RequirementsSection form={form} />
+            </CardContent>
+          </Card>
+          
+          {/* Publishing Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Publishing Options</CardTitle>
+              <CardDescription>
+                Control the visibility of your experience
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PublishToggle form={form} fieldName="is_published" />
             </CardContent>
           </Card>
         </div>

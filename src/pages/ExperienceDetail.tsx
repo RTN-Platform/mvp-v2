@@ -18,6 +18,8 @@ import {
 import { MapPin, Star, Clock, Calendar as CalendarIcon, Check } from "lucide-react";
 import CommentSection from "@/components/comments/CommentSection";
 import { useIsMobile } from "@/hooks/use-mobile";
+import HostInfoBadge from "@/components/listings/cards/HostInfoBadge";
+import VerticalImageGallery from "@/components/listings/cards/VerticalImageGallery";
 
 const ExperienceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,12 +27,19 @@ const ExperienceDetail: React.FC = () => {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [participants, setParticipants] = useState(1);
   const isMobile = useIsMobile();
+  const [showCarousel, setShowCarousel] = useState(true);
+  
+  // Toggle between carousel and vertical gallery view
+  const toggleImageDisplay = () => {
+    setShowCarousel(!showCarousel);
+  };
   
   // Mock data for the experience detail page
   // In a real application, this would be fetched from an API based on the ID
   const experiences = [
     {
       id: "hiking-banff",
+      host_id: "e07a73ae-f62b-4d12-9fab-7df519afd5bb", // Added host_id field
       title: "Guided Hiking Tour in Banff",
       location: "Banff National Park, AB",
       tagline: "Experience the breathtaking beauty of the Canadian Rockies",
@@ -70,6 +79,7 @@ const ExperienceDetail: React.FC = () => {
     },
     {
       id: "costa-rica-rainforest",
+      host_id: "f12a89bc-e34d-5678-9012-3456def78901", // Added host_id field
       title: "Costa Rica Rainforest Experience",
       location: "Costa Rica",
       tagline: "Immerse yourself in the vibrant ecosystem of a tropical rainforest",
@@ -106,7 +116,6 @@ const ExperienceDetail: React.FC = () => {
         { author: "Robert J.", rating: 4, comment: "Great experience! Would recommend bringing extra bug spray though." }
       ]
     },
-    // More experience data would be included here...
   ];
 
   const experience = experiences.find(exp => exp.id === id);
@@ -132,25 +141,41 @@ const ExperienceDetail: React.FC = () => {
   return (
     <MainLayout>
       <div className="py-4 px-4 md:px-6 max-w-5xl mx-auto">
-        {/* Hero section with carousel */}
+        {/* Hero section with image display options */}
         <div className="mb-6 md:mb-8">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {experience.images.map((image, index) => (
-                <CarouselItem key={index}>
-                  <div className="relative h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] overflow-hidden rounded-lg">
-                    <img
-                      src={image}
-                      alt={`${experience.title} - image ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
-          </Carousel>
+          {showCarousel ? (
+            <Carousel className="w-full">
+              <CarouselContent>
+                {experience.images.map((image, index) => (
+                  <CarouselItem key={index}>
+                    <div className="relative h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] overflow-hidden rounded-lg">
+                      <img
+                        src={image}
+                        alt={`${experience.title} - image ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
+            </Carousel>
+          ) : (
+            <VerticalImageGallery 
+              images={experience.images}
+              alt={experience.title}
+            />
+          )}
+          <div className="flex justify-end mt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={toggleImageDisplay}
+            >
+              {showCarousel ? "View as Gallery" : "View as Carousel"}
+            </Button>
+          </div>
         </div>
 
         {/* Main content layout that adapts to screen size */}
@@ -164,6 +189,10 @@ const ExperienceDetail: React.FC = () => {
                     #{tag}
                   </Badge>
                 ))}
+              </div>
+              
+              <div className="flex items-start gap-3 mb-3">
+                <HostInfoBadge hostId={experience.host_id} />
               </div>
 
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{experience.title}</h1>

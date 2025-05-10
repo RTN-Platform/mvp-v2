@@ -160,13 +160,13 @@ const Experiences: React.FC = () => {
                 id={listing.id}
                 title={listing.title}
                 location={listing.location}
+                description={listing.description || ''}
+                coverImage={listing.cover_image}
                 price={listing.price}
                 priceLabel={listing.priceLabel}
-                coverImage={listing.cover_image}
+                isPublished={listing.is_published || true}
                 type={listing.type}
                 detailUrl={listing.detailUrl}
-                description={listing.description || ''}
-                isPublished={listing.is_published || true}
               />
             ))}
           </div>

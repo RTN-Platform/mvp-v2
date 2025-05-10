@@ -1,11 +1,11 @@
-
 import React, { useState, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Send, Paperclip, X } from "lucide-react";
+import { Message } from "@/types/message";
 
 interface MessageComposerProps {
-  onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
+  onSendMessage: (content: string, attachments?: File[]) => Promise<Message | null>;
 }
 
 const MessageComposer: React.FC<MessageComposerProps> = ({ onSendMessage }) => {

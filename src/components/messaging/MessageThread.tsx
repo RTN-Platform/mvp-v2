@@ -10,7 +10,7 @@ interface MessageThreadProps {
   isLoading: boolean;
   contactName: string;
   contactAvatar: string | null;
-  onSendMessage: (content: string, attachments?: File[]) => Promise<void>;
+  onSendMessage: (content: string, attachments?: File[]) => Promise<Message | null>;
   currentUserId?: string;
 }
 

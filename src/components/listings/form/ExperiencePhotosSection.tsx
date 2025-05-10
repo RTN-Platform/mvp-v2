@@ -31,7 +31,6 @@ const ExperiencePhotosSection: React.FC<ExperiencePhotosSectionProps> = ({
         setCoverImageIndex={setCoverImageIndex}
         userId={userId}
         isEditing={isEditing}
-        initialImages={initialData?.images || []}
         entityType="experiences"
       />
     </CardContent>

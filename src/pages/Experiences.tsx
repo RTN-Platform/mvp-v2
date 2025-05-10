@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,9 +162,10 @@ const Experiences: React.FC = () => {
                 price={listing.price}
                 priceLabel={listing.priceLabel}
                 coverImage={listing.cover_image}
-                images={listing.images || []}
                 type={listing.type}
                 detailUrl={listing.detailUrl}
+                description={listing.description || ''}
+                isPublished={listing.is_published || true}
               />
             ))}
           </div>

@@ -16,7 +16,7 @@ type ListingCardProps = {
   isPublished: boolean;
   hostId?: string;
   isAdmin?: boolean;
-  type?: string; // Added type property
+  type?: string;
   detailUrl?: string;
   onEditClick?: (id: string) => void;
   onDeleteClick?: (id: string) => void;
@@ -91,10 +91,10 @@ const ListingCard: React.FC<ListingCardProps> = ({
     </>
   );
 
-  if (linkTo) {
+  if (detailUrl) {
     return (
       <Card className="h-full transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
-        <Link to={linkTo} className="block h-full">
+        <Link to={detailUrl} className="block h-full">
           {cardContent}
         </Link>
       </Card>

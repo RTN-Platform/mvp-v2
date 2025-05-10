@@ -157,7 +157,8 @@ const Feed: React.FC = () => {
                 priceLabel={listing.priceLabel}
                 isPublished={listing.is_published}
                 hostId={listing.host_id}
-                linkTo={`/${listing.type}s/${listing.id}`}
+                type={listing.type}
+                detailUrl={`/${listing.type}s/${listing.id}`}
               />
             ))}
           </div>

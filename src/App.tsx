@@ -1,129 +1,88 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/contexts/AuthContext";
-import RoleGuard from "@/components/auth/RoleGuard";
-import StorageInit from "@/components/App/StorageInit";
+import React, { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import "./App.css";
 
-import Index from "@/pages/Index";
-import Auth from "@/pages/Auth";
-import Profile from "@/pages/Profile";
-import MemberProfile from "@/pages/MemberProfile";
-import EditProfile from "@/pages/EditProfile";
-import Tribe from "@/pages/Tribe";
-import ResetPassword from "@/pages/ResetPassword";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import Dashboard from "@/pages/admin/Dashboard";
-import UserManagement from "@/pages/admin/UserManagement";
-import AuditLogs from "@/pages/admin/AuditLogs";
-import ContentManagement from "@/pages/admin/ContentManagement";
-import Messaging from "@/pages/admin/Messaging";
-import NotFound from "@/pages/NotFound";
-import Messages from "@/pages/Messages";
-import Notifications from "@/pages/Notifications";
-import BecomeHost from "@/pages/BecomeHost";
-import CreateUpdate from "@/pages/CreateUpdate";
-import Wishlist from "@/pages/Wishlist";
-import MyListings from "@/pages/MyListings";
-import CreateListing from "@/pages/CreateListing";
-import EditListing from "@/pages/EditListing";
-import Experiences from "@/pages/Experiences";
-import ExperienceDetail from "@/pages/ExperienceDetail";
-import AccommodationDetail from "@/pages/AccommodationDetail";
+// Pages
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
+import Messages from "./pages/Messages";
+import Wishlist from "./pages/Wishlist";
+import Notifications from "./pages/Notifications";
+import BecomeHost from "./pages/BecomeHost";
+import Tribe from "./pages/Tribe";
+import MemberProfile from "./pages/MemberProfile";
+import CreateListing from "./pages/CreateListing";
+import MyListings from "./pages/MyListings";
+import EditListing from "./pages/EditListing";
+import AccommodationDetail from "./pages/AccommodationDetail";
+import ExperienceDetail from "./pages/ExperienceDetail";
+import Experiences from "./pages/Experiences";
+import CreateUpdate from "./pages/CreateUpdate";
+
+// Admin Pages
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import Dashboard from "./pages/admin/Dashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import ContentManagement from "./pages/admin/ContentManagement";
+import AuditLogs from "./pages/admin/AuditLogs";
+import UserProfileView from "./pages/admin/UserProfileView";
+import Messaging from "./pages/admin/Messaging";
+
+// Components
+import { Toaster } from "./components/ui/toaster";
+import RoleGuard from "./components/auth/RoleGuard";
+import StorageInit from "./components/App/StorageInit";
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
-      <AuthProvider>
-        <Router>
-          {/* Initialize storage buckets */}
-          <StorageInit />
-          
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/edit-profile" element={<EditProfile />} />
-            <Route path="/member/:id" element={<MemberProfile />} />
-            <Route path="/tribe" element={<Tribe />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/create-update" element={<CreateUpdate />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/experiences" element={<Experiences />} />
-            <Route path="/experiences/:id" element={<ExperienceDetail />} />
-            <Route path="/accommodations/:id" element={<AccommodationDetail />} />
-            
-            {/* Host routes */}
-            <Route 
-              path="/become-host" 
-              element={<BecomeHost />} 
-            />
-            <Route 
-              path="/my-listings" 
-              element={
-                <RoleGuard allowedRoles={['host', 'admin']}>
-                  <MyListings />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="/create-listing" 
-              element={
-                <RoleGuard allowedRoles={['host', 'admin']}>
-                  <CreateListing />
-                </RoleGuard>
-              } 
-            />
-            <Route 
-              path="/edit-listing/:type/:id" 
-              element={
-                <RoleGuard allowedRoles={['host', 'admin']}>
-                  <EditListing />
-                </RoleGuard>
-              } 
-            />
-            
-            {/* Admin routes */}
-            <Route path="/admin" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <AdminDashboard />
-              </RoleGuard>
-            } />
-            <Route path="/admin/dashboard" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <Dashboard />
-              </RoleGuard>
-            } />
-            <Route path="/admin/users" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <UserManagement />
-              </RoleGuard>
-            } />
-            <Route path="/admin/audit-logs" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <AuditLogs />
-              </RoleGuard>
-            } />
-            <Route path="/admin/content" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <ContentManagement />
-              </RoleGuard>
-            } />
-            <Route path="/admin/messaging" element={
-              <RoleGuard allowedRoles={['admin']}>
-                <Messaging />
-              </RoleGuard>
-            } />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-        <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
+    <>
+      <StorageInit />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/become-host" element={<BecomeHost />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/tribe" element={<Tribe />} />
+        <Route path="/member/:id" element={<MemberProfile />} />
+        <Route path="/create-listing" element={<CreateListing />} />
+        <Route path="/my-listings" element={<MyListings />} />
+        <Route path="/edit-listing/:type/:id" element={<EditListing />} />
+        <Route path="/accommodations/:id" element={<AccommodationDetail />} />
+        <Route path="/experiences/:id" element={<ExperienceDetail />} />
+        <Route path="/experiences" element={<Experiences />} />
+        <Route path="/create-update" element={<CreateUpdate />} />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </RoleGuard>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="users" element={<UserManagement />} />
+          <Route path="users/:id" element={<UserProfileView />} />
+          <Route path="content" element={<ContentManagement />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route path="messaging" element={<Messaging />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
   );
 }
 

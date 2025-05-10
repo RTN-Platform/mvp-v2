@@ -2,13 +2,13 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ImageIcon, Trash2, Upload, CheckCircle2, XCircle } from "lucide-react";
+import { ImageIcon, Trash2, Upload, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Spinner } from "@/components/ui/spinner"; // Add Spinner import
+import { Spinner } from "@/components/ui/spinner";
+import { createBucketIfNotExists } from "@/utils/storage";
 
 interface ImageUploaderProps {
   imageUrls: string[];
@@ -37,37 +37,6 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
-
-  // Function to create storage bucket if it doesn't exist
-  const ensureStorageBucketExists = async (bucketName: string) => {
-    try {
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-      
-      if (!bucketExists) {
-        // Create bucket if it doesn't exist
-        const { error } = await supabase.storage.createBucket(bucketName, {
-          public: true
-        });
-        
-        if (error) throw error;
-        
-        // Set public policy for the bucket
-        const { error: policyError } = await supabase.storage.from(bucketName).createSignedUrl('dummy-path', 1);
-        if (policyError && !policyError.message.includes('dummy-path')) {
-          console.error('Error setting bucket policy:', policyError);
-        }
-        
-        console.log(`Created storage bucket: ${bucketName}`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking/creating storage bucket:', error);
-      return false;
-    }
-  };
 
   const uploadFile = useCallback(async (file: File) => {
     if (!userId) {
@@ -105,7 +74,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
     const filePath = `${fileName}`;
 
     // Ensure the bucket exists before uploading
-    const bucketReady = await ensureStorageBucketExists(bucketName);
+    const bucketReady = await createBucketIfNotExists(bucketName);
     if (!bucketReady) {
       toast({
         variant: "destructive",

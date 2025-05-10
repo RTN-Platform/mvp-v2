@@ -9,9 +9,11 @@ const StorageInit = () => {
   useEffect(() => {
     const initStorage = async () => {
       try {
+        console.log('StorageInit: Starting storage initialization');
         await initializeStorageBuckets();
+        console.log('StorageInit: Storage initialization complete');
       } catch (error) {
-        console.error('Failed to initialize storage:', error);
+        console.error('StorageInit: Failed to initialize storage:', error);
         toast({
           variant: "destructive",
           title: "Storage Initialization Failed",

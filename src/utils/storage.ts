@@ -29,6 +29,8 @@ export const createBucketIfNotExists = async (bucketName: string): Promise<boole
       return true;
     }
     
+    console.log(`Attempting to create bucket: ${bucketName}`);
+    
     // Create the bucket
     const { error } = await supabase.storage.createBucket(bucketName, {
       public: true // Make bucket public
@@ -40,6 +42,17 @@ export const createBucketIfNotExists = async (bucketName: string): Promise<boole
     }
     
     console.log(`Successfully created bucket ${bucketName}`);
+    
+    // Additional step: Set public access for the bucket
+    const { error: policyError } = await supabase
+      .storage
+      .from(bucketName)
+      .getPublicUrl('dummy.txt');
+    
+    if (policyError && !policyError.message.includes('dummy.txt')) {
+      console.error('Error verifying bucket public access:', policyError);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error in createBucketIfNotExists:', error);
@@ -49,9 +62,19 @@ export const createBucketIfNotExists = async (bucketName: string): Promise<boole
 
 // Initialize required storage buckets for the application
 export const initializeStorageBuckets = async (): Promise<void> => {
-  // Create buckets for accommodations and experiences if they don't exist
-  await createBucketIfNotExists('accommodations');
-  await createBucketIfNotExists('experiences');
-  
-  console.log('Storage initialization complete');
+  try {
+    console.log('Starting storage initialization...');
+    
+    // Create buckets for accommodations and experiences if they don't exist
+    const accommodationsCreated = await createBucketIfNotExists('accommodations');
+    const experiencesCreated = await createBucketIfNotExists('experiences');
+    
+    console.log(`Storage initialization results: 
+      - accommodations bucket: ${accommodationsCreated ? 'success' : 'failed'}
+      - experiences bucket: ${experiencesCreated ? 'success' : 'failed'}`
+    );
+  } catch (error) {
+    console.error('Error initializing storage buckets:', error);
+    throw error; // Re-throw to be caught by the calling function
+  }
 };

@@ -5,7 +5,8 @@ import {
   FormItem, 
   FormLabel, 
   FormControl,
-  FormMessage 
+  FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
@@ -23,25 +24,49 @@ const PricingSection: React.FC<PricingSectionProps> = ({
   label = "Price per night ($)"
 }) => {
   return (
-    <FormField
-      control={form.control}
-      name={pricingField}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              {...field}
-              onChange={(e) => field.onChange(parseFloat(e.target.value))}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name={pricingField}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                {...field}
+                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="booking_url"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>External Booking URL (optional)</FormLabel>
+            <FormControl>
+              <Input 
+                type="url" 
+                placeholder="https://example.com/booking" 
+                {...field} 
+                value={field.value || ""} 
+              />
+            </FormControl>
+            <FormDescription>
+              If provided, the "Book Now" button will link to this external URL
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 };
 

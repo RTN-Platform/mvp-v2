@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -20,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Home, Building, ArrowDown, ArrowUp } from "lucide-react";
+import { Home, Building } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,6 +62,7 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
       max_guests: 1,
       house_rules: "",
       is_published: false,
+      booking_url: "",
     },
   });
 
@@ -79,6 +79,7 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
         max_guests: initialData.max_guests,
         house_rules: initialData.house_rules || "",
         is_published: initialData.is_published || false,
+        booking_url: initialData.booking_url || "",
       });
       
       if (initialData.amenities && Array.isArray(initialData.amenities)) {
@@ -136,6 +137,7 @@ const AccommodationForm: React.FC<AccommodationFormProps> = ({
         cover_image: coverImage,
         images: imageUrls,
         is_published: data.is_published,
+        booking_url: data.booking_url || null,
       };
 
       let result;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -58,6 +57,7 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
       capacity: 5,
       requirements: "",
       is_published: false,
+      booking_url: "",
     },
   });
   
@@ -73,6 +73,7 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
         capacity: initialData.capacity || 5,
         requirements: initialData.requirements || "",
         is_published: initialData.is_published || false,
+        booking_url: initialData.booking_url || "",
       });
       
       if (initialData.included_items && Array.isArray(initialData.included_items)) {
@@ -129,6 +130,7 @@ const ExperienceForm: React.FC<ExperienceFormProps> = ({
         cover_image: coverImage,
         images: imageUrls,
         is_published: data.is_published,
+        booking_url: data.booking_url || null,
       };
 
       let result;

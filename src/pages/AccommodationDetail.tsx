@@ -8,7 +8,7 @@ import { MapPin, Calendar, Users, Home, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Spinner } from "@/components/ui/spinner";
-import VerticalImageGallery from "@/components/listings/cards/VerticalImageGallery";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import HostInfoBadge from "@/components/listings/cards/HostInfoBadge";
 
 const AccommodationDetail: React.FC = () => {
@@ -86,6 +86,13 @@ const AccommodationDetail: React.FC = () => {
     );
   }
 
+  const handleBookNow = () => {
+    // If external booking URL is provided, navigate to it
+    if (accommodation.booking_url) {
+      window.open(accommodation.booking_url, '_blank');
+    }
+  };
+
   return (
     <MainLayout>
       <div className="pb-12">
@@ -98,7 +105,7 @@ const AccommodationDetail: React.FC = () => {
           </Button>
         </div>
 
-        {/* Title and Location */}
+        {/* Title and Location - styled like the mockup */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">{accommodation.title}</h1>
           <div className="flex items-center text-gray-600">
@@ -107,25 +114,97 @@ const AccommodationDetail: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column with main image and details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Main image */}
-            <div className="rounded-lg overflow-hidden h-96">
-              <img 
-                src={accommodation.cover_image || 'https://images.unsplash.com/photo-1588880331179-bc9b93a8cb5e?&auto=format&fit=crop&w=800&q=80'} 
-                alt={accommodation.title} 
-                className="w-full h-full object-cover"
-              />
+        {/* Main layout based on mockup */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Main image carousel - spans 2/3 of the width */}
+          <div className="md:col-span-8 space-y-6">
+            <div className="rounded-lg overflow-hidden">
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {/* Main cover image first */}
+                  <CarouselItem>
+                    <div className="h-[400px] w-full">
+                      <img 
+                        src={accommodation.cover_image || 'https://images.unsplash.com/photo-1588880331179-bc9b93a8cb5e?&auto=format&fit=crop&w=800&q=80'} 
+                        alt={accommodation.title} 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  </CarouselItem>
+                  
+                  {/* Additional images */}
+                  {accommodation.images && 
+                    accommodation.images
+                      .filter((img: string) => img !== accommodation.cover_image)
+                      .map((image: string, index: number) => (
+                        <CarouselItem key={index}>
+                          <div className="h-[400px] w-full">
+                            <img 
+                              src={image} 
+                              alt={`${accommodation.title} - ${index + 2}`}
+                              className="w-full h-full object-cover rounded-lg" 
+                            />
+                          </div>
+                        </CarouselItem>
+                      ))
+                  }
+                </CarouselContent>
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </Carousel>
             </div>
 
-            {/* Description */}
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">About this place</h2>
-              <p className="text-gray-700 whitespace-pre-line">{accommodation.description}</p>
-            </Card>
+            {/* Secondary images grid like in mockup */}
+            {accommodation.images && accommodation.images.length > 1 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {accommodation.images.slice(0, 3).map((image: string, index: number) => (
+                  <div key={index} className="rounded-lg overflow-hidden h-36">
+                    <img 
+                      src={image} 
+                      alt={`${accommodation.title} thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Amenities */}
+            {/* Two-column layout for content as in mockup */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* About This Place */}
+              <Card className="p-6">
+                <h2 className="text-xl font-semibold mb-4">About this place</h2>
+                <p className="text-gray-700 whitespace-pre-line">{accommodation.description}</p>
+              </Card>
+
+              {/* Booking card - moved from sidebar per mockup */}
+              <Card className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-2xl font-bold">${accommodation.price_per_night}<span className="text-sm font-normal text-gray-500"> / night</span></div>
+                </div>
+                
+                <div className="border-t border-b py-4 my-4">
+                  <div className="flex items-center mb-2">
+                    <Home className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>{accommodation.bedrooms} bedroom{accommodation.bedrooms !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex items-center mb-2">
+                    <Users className="h-4 w-4 mr-2 text-gray-500" />
+                    <span>Up to {accommodation.max_guests} guest{accommodation.max_guests !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={handleBookNow}
+                >
+                  Book Now
+                </Button>
+              </Card>
+            </div>
+
+            {/* Amenities Section */}
             {accommodation.amenities && accommodation.amenities.length > 0 && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Amenities</h2>
@@ -140,7 +219,7 @@ const AccommodationDetail: React.FC = () => {
               </Card>
             )}
 
-            {/* House Rules */}
+            {/* House Rules Section */}
             {accommodation.house_rules && (
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">House Rules</h2>
@@ -148,42 +227,14 @@ const AccommodationDetail: React.FC = () => {
               </Card>
             )}
           </div>
-
-          {/* Right column with booking info and additional images */}
-          <div className="space-y-6">
-            {/* Booking card */}
-            <Card className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-2xl font-bold">${accommodation.price_per_night}<span className="text-sm font-normal text-gray-500"> / night</span></div>
-              </div>
-              
-              <div className="border-t border-b py-4 my-4">
-                <div className="flex items-center mb-2">
-                  <Home className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>{accommodation.bedrooms} bedroom{accommodation.bedrooms !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="flex items-center mb-2">
-                  <Users className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>Up to {accommodation.max_guests} guest{accommodation.max_guests !== 1 ? 's' : ''}</span>
-                </div>
-              </div>
-              
-              <Button className="w-full" size="lg">Book Now</Button>
-              
-              {/* Host info */}
-              <div className="mt-6">
-                <h3 className="text-lg font-medium mb-2">Hosted by {hostName}</h3>
-                <HostInfoBadge hostId={accommodation.host_id} />
-              </div>
+          
+          {/* Right sidebar - 1/3 width */}
+          <div className="md:col-span-4">
+            {/* Host info card */}
+            <Card className="p-6 mb-6">
+              <h3 className="text-lg font-medium mb-4">Hosted by {hostName}</h3>
+              <HostInfoBadge hostId={accommodation.host_id} />
             </Card>
-            
-            {/* Additional images */}
-            {accommodation.images && accommodation.images.length > 0 && (
-              <VerticalImageGallery 
-                images={accommodation.images.filter((img: string) => img !== accommodation.cover_image)} 
-                alt={accommodation.title}
-              />
-            )}
           </div>
         </div>
       </div>

@@ -18,62 +18,37 @@ export const checkBucketExists = async (bucketName: string): Promise<boolean> =>
   }
 };
 
-// Function to create a bucket if it doesn't exist
-export const createBucketIfNotExists = async (bucketName: string): Promise<boolean> => {
-  try {
-    // Check if bucket already exists
-    const exists = await checkBucketExists(bucketName);
+// Function to get public URL for a file
+export const getPublicUrl = (bucketName: string, filePath: string): string => {
+  const { data } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
     
-    if (exists) {
-      console.log(`Bucket ${bucketName} already exists`);
-      return true;
-    }
-    
-    console.log(`Attempting to create bucket: ${bucketName}`);
-    
-    // Create the bucket
-    const { error } = await supabase.storage.createBucket(bucketName, {
-      public: true // Make bucket public
-    });
-    
-    if (error) {
-      console.error(`Error creating bucket ${bucketName}:`, error);
-      return false;
-    }
-    
-    console.log(`Successfully created bucket ${bucketName}`);
-    
-    // Additional step: Set public access for the bucket
-    // Fix: The getPublicUrl method doesn't return an error property
-    const { data } = await supabase
-      .storage
-      .from(bucketName)
-      .getPublicUrl('dummy.txt');
-    
-    // We don't need to check for an error property here
-    
-    return true;
-  } catch (error) {
-    console.error('Error in createBucketIfNotExists:', error);
-    return false;
-  }
+  return data.publicUrl;
 };
 
 // Initialize required storage buckets for the application
 export const initializeStorageBuckets = async (): Promise<void> => {
   try {
-    console.log('Starting storage initialization...');
+    console.log('Starting storage initialization check...');
     
-    // Create buckets for accommodations and experiences if they don't exist
-    const accommodationsCreated = await createBucketIfNotExists('accommodations');
-    const experiencesCreated = await createBucketIfNotExists('experiences');
+    // Check if buckets for accommodations and experiences exist
+    const accommodationsExists = await checkBucketExists('accommodations');
+    const experiencesExists = await checkBucketExists('experiences');
     
-    console.log(`Storage initialization results: 
-      - accommodations bucket: ${accommodationsCreated ? 'success' : 'failed'}
-      - experiences bucket: ${experiencesCreated ? 'success' : 'failed'}`
+    console.log(`Storage check results: 
+      - accommodations bucket: ${accommodationsExists ? 'exists' : 'missing'}
+      - experiences bucket: ${experiencesExists ? 'exists' : 'missing'}`
     );
+    
+    if (!accommodationsExists || !experiencesExists) {
+      console.log('One or more required storage buckets are missing.');
+      return;
+    }
+    
+    console.log('All required storage buckets are available and ready to use.');
   } catch (error) {
-    console.error('Error initializing storage buckets:', error);
+    console.error('Error checking storage buckets:', error);
     throw error; // Re-throw to be caught by the calling function
   }
 };

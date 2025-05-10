@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { createBucketIfNotExists } from "@/utils/storage";
 
 interface UseImageUploadProps {
   userId?: string;
@@ -60,19 +59,10 @@ export const useImageUpload = ({ userId, entityType }: UseImageUploadProps): Use
     const fileName = `${userId}/${uuidv4()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    // Ensure the bucket exists before uploading
-    const bucketReady = await createBucketIfNotExists(bucketName);
-    if (!bucketReady) {
-      toast({
-        variant: "destructive",
-        title: "Upload Error",
-        description: "Failed to prepare storage. Please try again later.",
-      });
-      return null;
-    }
+    setUploading(true);
 
     try {
-      // Upload the file
+      // Upload the file directly to the existing bucket
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
@@ -82,6 +72,8 @@ export const useImageUpload = ({ userId, entityType }: UseImageUploadProps): Use
 
       if (error) throw error;
 
+      setUploading(false);
+
       // Get the public URL for the file
       const { data: urlData } = supabase.storage
         .from(bucketName)
@@ -89,6 +81,7 @@ export const useImageUpload = ({ userId, entityType }: UseImageUploadProps): Use
 
       return urlData.publicUrl;
     } catch (error: any) {
+      setUploading(false);
       console.error('Error uploading image:', error);
       toast({
         variant: "destructive",

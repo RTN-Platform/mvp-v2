@@ -7,22 +7,22 @@ const StorageInit = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const initStorage = async () => {
+    const checkStorage = async () => {
       try {
-        console.log('StorageInit: Starting storage initialization');
+        console.log('StorageInit: Starting storage initialization check');
         await initializeStorageBuckets();
-        console.log('StorageInit: Storage initialization complete');
+        console.log('StorageInit: Storage check complete');
       } catch (error) {
-        console.error('StorageInit: Failed to initialize storage:', error);
+        console.error('StorageInit: Failed to check storage:', error);
         toast({
           variant: "destructive",
-          title: "Storage Initialization Failed",
-          description: "There was an issue setting up storage. Some features may not work correctly.",
+          title: "Storage Check Failed",
+          description: "There was an issue checking storage availability. Some features may not work correctly.",
         });
       }
     };
 
-    initStorage();
+    checkStorage();
   }, [toast]);
 
   return null; // This component doesn't render anything

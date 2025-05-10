@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import RoleGuard from "@/components/auth/RoleGuard";
+import StorageInit from "@/components/App/StorageInit";
 
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -29,12 +30,16 @@ import CreateListing from "@/pages/CreateListing";
 import EditListing from "@/pages/EditListing";
 import Experiences from "@/pages/Experiences";
 import ExperienceDetail from "@/pages/ExperienceDetail";
+import AccommodationDetail from "@/pages/AccommodationDetail";
 
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
       <AuthProvider>
         <Router>
+          {/* Initialize storage buckets */}
+          <StorageInit />
+          
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -49,6 +54,7 @@ function App() {
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/experiences" element={<Experiences />} />
             <Route path="/experiences/:id" element={<ExperienceDetail />} />
+            <Route path="/accommodations/:id" element={<AccommodationDetail />} />
             
             {/* Host routes */}
             <Route 

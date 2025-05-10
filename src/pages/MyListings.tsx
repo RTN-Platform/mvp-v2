@@ -2,45 +2,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building, Tent, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MainLayout from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { isHost, isAdmin } from "@/utils/roles";
 import { supabase } from "@/integrations/supabase/client";
 import DeleteConfirmationDialog from "@/components/listings/dialogs/DeleteConfirmationDialog";
-import AccommodationsTab from "@/components/listings/tabs/AccommodationsTab";
-import ExperiencesTab from "@/components/listings/tabs/ExperiencesTab";
-
-type Accommodation = {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  cover_image: string | null;
-  price_per_night: number;
-  is_published: boolean;
-  host_id: string;
-};
-
-type Experience = {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  cover_image: string | null;
-  price_per_person: number;
-  is_published: boolean;
-  host_id: string;
-};
+import MyListingsContent from "@/components/listings/MyListingsContent";
 
 const MyListings: React.FC = () => {
   const { user, profile } = useAuth();
-  const [activeTab, setActiveTab] = useState<"accommodations" | "experiences">("accommodations");
   const [isLoading, setIsLoading] = useState(true);
-  const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
-  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [accommodations, setAccommodations] = useState([]);
+  const [experiences, setExperiences] = useState([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; type: 'accommodation' | 'experience' } | null>(null);
   const { toast } = useToast();
@@ -176,38 +151,14 @@ const MyListings: React.FC = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-          <TabsList>
-            <TabsTrigger value="accommodations" className="flex items-center">
-              <Building className="mr-2 h-4 w-4" /> Accommodations
-            </TabsTrigger>
-            <TabsTrigger value="experiences" className="flex items-center">
-              <Tent className="mr-2 h-4 w-4" /> Experiences
-            </TabsTrigger>
-          </TabsList>
-          
-          <div className="mt-6">
-            <TabsContent value="accommodations">
-              <AccommodationsTab 
-                accommodations={accommodations}
-                isLoading={isLoading}
-                isAdminUser={isAdminUser}
-                onEditListing={handleEditListing}
-                onDeleteClick={handleDeleteClick}
-              />
-            </TabsContent>
-            
-            <TabsContent value="experiences">
-              <ExperiencesTab 
-                experiences={experiences}
-                isLoading={isLoading}
-                isAdminUser={isAdminUser}
-                onEditListing={handleEditListing}
-                onDeleteClick={handleDeleteClick}
-              />
-            </TabsContent>
-          </div>
-        </Tabs>
+        <MyListingsContent 
+          isLoading={isLoading}
+          isAdminUser={isAdminUser}
+          accommodations={accommodations}
+          experiences={experiences}
+          onEditListing={handleEditListing}
+          onDeleteClick={handleDeleteClick}
+        />
       </div>
 
       <DeleteConfirmationDialog 

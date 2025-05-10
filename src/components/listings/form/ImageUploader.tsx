@@ -1,12 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Upload, Image as ImageIcon } from "lucide-react";
-import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ImageIcon, Trash2, Upload, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Spinner } from "@/components/ui/spinner";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from 'uuid';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ImageUploaderProps {
   imageUrls: string[];
@@ -19,6 +20,9 @@ interface ImageUploaderProps {
   entityType: 'accommodations' | 'experiences';
 }
 
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 const ImageUploader: React.FC<ImageUploaderProps> = ({
   imageUrls,
   setImageUrls,
@@ -26,230 +30,299 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   setCoverImageIndex,
   userId,
   isEditing,
-  initialImages = [],
-  entityType,
+  entityType
 }) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
-  // Allowed image formats and sizes
-  const ALLOWED_FORMATS = ['jpg', 'jpeg', 'png', 'gif'];
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUploadError(null);
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Check if user ID is available
-    if (!userId) {
-      setUploadError("User authentication required to upload images");
-      toast({
-        title: "Authentication required",
-        description: "Please log in to upload images",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check file sizes
-    for (let i = 0; i < files.length; i++) {
-      if (files[i].size > MAX_FILE_SIZE) {
-        setUploadError(`File "${files[i].name}" exceeds the maximum file size of 5MB.`);
-        toast({
-          title: "File too large",
-          description: `${files[i].name} exceeds the maximum file size of 5MB.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    setIsUploading(true);
-
+  // Function to create storage bucket if it doesn't exist
+  const ensureStorageBucketExists = async (bucketName: string) => {
     try {
-      const newImageUrls = [...imageUrls];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split(".").pop()?.toLowerCase();
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+      
+      if (!bucketExists) {
+        // Create bucket if it doesn't exist
+        const { error } = await supabase.storage.createBucket(bucketName, {
+          public: true
+        });
         
-        // Check file format
-        if (!ALLOWED_FORMATS.includes(fileExt || '')) {
-          toast({
-            title: "Invalid file format",
-            description: `${file.name} is not a supported image format. Only JPG, JPEG, PNG and GIF are accepted.`,
-            variant: "destructive",
-          });
-          continue;
+        if (error) throw error;
+        
+        // Set public policy for the bucket
+        const { error: policyError } = await supabase.storage.from(bucketName).createSignedUrl('dummy-path', 1);
+        if (policyError && !policyError.message.includes('dummy-path')) {
+          console.error('Error setting bucket policy:', policyError);
         }
-
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${entityType}/${userId}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from(entityType)
-          .upload(filePath, file);
-
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          setUploadError(`Error uploading ${file.name}: ${uploadError.message}`);
-          throw uploadError;
-        }
-
-        const { data } = supabase.storage
-          .from(entityType)
-          .getPublicUrl(filePath);
-
-        newImageUrls.push(data.publicUrl);
-      }
-
-      setImageUrls(newImageUrls);
-
-      // If this is the first image, set it as the cover image
-      if (coverImageIndex === -1 && newImageUrls.length > 0) {
-        setCoverImageIndex(0);
+        
+        console.log(`Created storage bucket: ${bucketName}`);
       }
       
-      toast({
-        title: "Images uploaded",
-        description: `${files.length} image${files.length > 1 ? 's' : ''} successfully uploaded`,
-      });
+      return true;
+    } catch (error) {
+      console.error('Error checking/creating storage bucket:', error);
+      return false;
+    }
+  };
 
-      // Clear the input
-      e.target.value = "";
-    } catch (error: any) {
-      console.error("Error uploading images:", error);
-      setUploadError(error.message || "Failed to upload one or more images");
+  const uploadFile = useCallback(async (file: File) => {
+    if (!userId) {
       toast({
-        title: "Upload failed",
-        description: "Failed to upload one or more images. Please try again.",
         variant: "destructive",
+        title: "Authentication required",
+        description: "Please log in to upload images.",
       });
-    } finally {
-      setIsUploading(false);
+      return null;
+    }
+
+    // Validate file type
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please upload a valid image format (JPG, PNG, or WebP).",
+      });
+      return null;
+    }
+
+    // Validate file size
+    if (file.size > IMAGE_MAX_SIZE) {
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Image size should be less than 5MB.",
+      });
+      return null;
+    }
+
+    const bucketName = entityType;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/${uuidv4()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    // Ensure the bucket exists before uploading
+    const bucketReady = await ensureStorageBucketExists(bucketName);
+    if (!bucketReady) {
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: "Failed to prepare storage. Please try again later.",
+      });
+      return null;
+    }
+
+    try {
+      // Upload the file
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      // Get the public URL for the file
+      const { data: urlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: error.message || "Failed to upload image.",
+      });
+      return null;
+    }
+  }, [userId, toast, entityType]);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const fileArray = Array.from(files);
+    const newUploadProgress = { ...uploadProgress };
+
+    // Update progress indicators for each file
+    fileArray.forEach(file => {
+      const id = URL.createObjectURL(file);
+      newUploadProgress[id] = 0;
+    });
+    setUploadProgress(newUploadProgress);
+
+    const uploadPromises = fileArray.map(async (file) => {
+      const id = URL.createObjectURL(file);
+      
+      try {
+        // Simulate progress updates
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            const current = prev[id] || 0;
+            if (current < 90) {
+              return { ...prev, [id]: current + 10 };
+            }
+            return prev;
+          });
+        }, 200);
+
+        const url = await uploadFile(file);
+        
+        clearInterval(progressInterval);
+        
+        if (url) {
+          setUploadProgress(prev => ({ ...prev, [id]: 100 }));
+          return url;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error in upload process:', error);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const successfulUploads = results.filter((url): url is string => url !== null);
+
+    if (successfulUploads.length > 0) {
+      setImageUrls(prevUrls => [...prevUrls, ...successfulUploads]);
+      toast({
+        title: "Upload Complete",
+        description: `Successfully uploaded ${successfulUploads.length} image${successfulUploads.length !== 1 ? 's' : ''}.`,
+      });
+    }
+
+    setUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const removeImage = (index: number) => {
-    const newImageUrls = [...imageUrls];
-    newImageUrls.splice(index, 1);
-    setImageUrls(newImageUrls);
-
-    // Adjust cover image index if needed
-    if (index === coverImageIndex) {
-      setCoverImageIndex(newImageUrls.length > 0 ? 0 : -1);
-    } else if (index < coverImageIndex) {
-      setCoverImageIndex(coverImageIndex - 1);
-    }
+    setImageUrls(prevUrls => {
+      const newUrls = [...prevUrls];
+      newUrls.splice(index, 1);
+      
+      // If removing the cover image, reset the cover image to the first image
+      if (index === coverImageIndex) {
+        setCoverImageIndex(newUrls.length > 0 ? 0 : -1);
+      } else if (index < coverImageIndex) {
+        // If removing an image before the cover image, adjust the cover image index
+        setCoverImageIndex(coverImageIndex - 1);
+      }
+      
+      return newUrls;
+    });
   };
 
   const setCoverImage = (index: number) => {
     setCoverImageIndex(index);
+    toast({
+      title: "Cover Image Set",
+      description: "This image will be used as the cover for your listing.",
+    });
   };
 
   return (
     <div className="space-y-4">
-      <div>
-        <Label htmlFor="images">Upload Images</Label>
-        <div className="mt-2">
-          <Label
-            htmlFor="image-upload"
-            className="flex justify-center items-center h-32 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-50"
-          >
-            {isUploading ? (
-              <div className="flex flex-col items-center">
-                <Spinner size="md" />
-                <span className="mt-2 text-sm text-gray-500">Uploading...</span>
+      <div className="flex flex-wrap gap-4 mb-4">
+        {imageUrls.map((url, index) => (
+          <Card key={index} className="relative overflow-hidden h-32 w-32">
+            <img 
+              src={url} 
+              alt={`Uploaded image ${index + 1}`} 
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+              <div className="flex space-x-2">
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={() => removeImage(index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={index === coverImageIndex ? "default" : "outline"} 
+                  size="icon" 
+                  className="h-8 w-8 bg-white text-gray-800 hover:bg-gray-100"
+                  onClick={() => setCoverImage(index)}
+                >
+                  <CheckCircle2 className={`h-4 w-4 ${index === coverImageIndex ? 'text-green-500' : 'text-gray-400'}`} />
+                </Button>
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <Upload className="h-10 w-10 text-gray-400" />
-                <span className="mt-2 text-sm text-gray-500">
-                  Click to upload images
-                </span>
+            </div>
+            {index === coverImageIndex && (
+              <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded">
+                Cover
               </div>
             )}
-          </Label>
-          <input
-            id="image-upload"
-            type="file"
-            multiple
-            accept="image/jpeg,image/jpg,image/png,image/gif"
-            className="hidden"
-            onChange={handleImageUpload}
-            disabled={isUploading}
-          />
-          
-          {/* Image requirements information */}
-          <div className="mt-2 p-3 bg-gray-50 rounded-md">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Image Requirements:</h4>
-            <ul className="text-xs text-gray-500 list-disc pl-5">
-              <li>Allowed formats: JPG, JPEG, PNG, GIF</li>
-              <li>Maximum file size: 5MB per image</li>
-              <li>Recommended aspect ratio: 16:9</li>
-            </ul>
-          </div>
+          </Card>
+        ))}
 
-          {uploadError && (
-            <Alert variant="destructive" className="mt-3">
-              <AlertTitle>Upload Error</AlertTitle>
-              <AlertDescription>{uploadError}</AlertDescription>
-            </Alert>
-          )}
-        </div>
+        {Object.keys(uploadProgress).map(id => (
+          uploadProgress[id] < 100 && (
+            <Card key={id} className="relative overflow-hidden h-32 w-32">
+              <div className="h-full w-full flex items-center justify-center bg-gray-100">
+                <div className="text-center">
+                  <Spinner size="sm" className="mb-1" />
+                  <div className="text-xs text-gray-500">{uploadProgress[id]}%</div>
+                </div>
+              </div>
+            </Card>
+          )
+        ))}
+
+        <Card className="h-32 w-32 flex items-center justify-center cursor-pointer hover:bg-gray-50" onClick={() => fileInputRef.current?.click()}>
+          <div className="text-center">
+            <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
+            <p className="mt-1 text-sm text-gray-500">Add Image</p>
+          </div>
+        </Card>
       </div>
 
+      <input 
+        type="file" 
+        accept="image/jpeg,image/png,image/webp" 
+        multiple 
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        disabled={uploading}
+      />
+
+      <Button 
+        type="button" 
+        variant="outline" 
+        className="w-full flex items-center justify-center"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        {uploading ? 'Uploading...' : 'Upload Images'}
+      </Button>
+
+      <Alert className="bg-blue-50 border-blue-200">
+        <AlertDescription className="text-sm text-blue-700">
+          <p><strong>Image Requirements:</strong></p>
+          <ul className="list-disc pl-5 mt-1">
+            <li>Accepted formats: JPG, PNG, WebP</li>
+            <li>Maximum file size: 5MB per image</li>
+            <li>For best results, use high-quality images with a 16:9 aspect ratio</li>
+          </ul>
+        </AlertDescription>
+      </Alert>
+
       {imageUrls.length > 0 && (
-        <div>
-          <Label>Your Images</Label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-2">
-            {imageUrls.map((url, index) => (
-              <div
-                key={url}
-                className={`relative group border rounded-md overflow-hidden ${
-                  index === coverImageIndex ? "ring-2 ring-primary" : ""
-                }`}
-              >
-                <img
-                  src={url}
-                  alt={`Image ${index + 1}`}
-                  className="w-full h-32 object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="flex space-x-2">
-                    {index !== coverImageIndex && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="bg-white"
-                        onClick={() => setCoverImage(index)}
-                      >
-                        <ImageIcon className="h-4 w-4" />
-                        <span className="ml-1 text-xs">Cover</span>
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="bg-white text-red-500 hover:text-red-700"
-                      onClick={() => removeImage(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {index === coverImageIndex && (
-                  <div className="absolute top-0 left-0 bg-primary text-white text-xs px-2 py-1 rounded-br">
-                    Cover
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="text-sm text-gray-500">
+          {imageUrls.length} image{imageUrls.length !== 1 ? 's' : ''} uploaded. Click on the check icon to set your cover image.
         </div>
       )}
     </div>

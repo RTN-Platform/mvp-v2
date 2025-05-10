@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 
 // Pages
@@ -74,7 +74,7 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="dashboard" element={<Dashboard />} /> {/* Add explicit dashboard route */}
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="users/:id" element={<UserProfileView />} />
           <Route path="content" element={<ContentManagement />} />

@@ -9,34 +9,50 @@ import { Spinner } from "@/components/ui/spinner";
 import ListingCard from "@/components/listings/cards/ListingCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface Accommodation {
+// Define more complete interfaces with all the required properties
+interface BaseListingProps {
   id: string;
   title: string;
   location: string;
   description: string;
   cover_image: string | null;
-  price_per_night: number;
   is_published: boolean;
   host_id: string;
+  created_at?: string;
+  updated_at?: string;
+  type: string;
+  price: number;
+  priceLabel: string;
 }
 
-interface Experience {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  cover_image: string | null;
-  price_per_person: number;
-  is_published: boolean;
-  host_id: string;
+interface Accommodation extends Omit<BaseListingProps, 'type' | 'price' | 'priceLabel'> {
+  price_per_night: number;
+  bedrooms: number;
+  bathrooms: number;
+  max_guests: number;
+  house_rules: string | null;
+  amenities: string[] | null;
+  images: string[] | null;
 }
+
+interface Experience extends Omit<BaseListingProps, 'type' | 'price' | 'priceLabel'> {
+  price_per_person: number;
+  duration: number;
+  capacity: number;
+  requirements: string | null;
+  included_items: string[] | null;
+  images: string[] | null;
+}
+
+// Combined type for formatted listings
+type FormattedListing = BaseListingProps;
 
 const Feed: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
-  const [listings, setListings] = useState<(Accommodation | Experience & { type: string })[]>([]);
+  const [listings, setListings] = useState<FormattedListing[]>([]);
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -60,15 +76,16 @@ const Feed: React.FC = () => {
 
         if (expError) throw expError;
         
-        // Combine and format the listings
-        const formattedAccommodations = accData.map(acc => ({
+        // Format accommodations with required properties
+        const formattedAccommodations: FormattedListing[] = accData.map(acc => ({
           ...acc,
           type: 'accommodation',
           price: acc.price_per_night,
           priceLabel: 'per night'
         }));
         
-        const formattedExperiences = expData.map(exp => ({
+        // Format experiences with required properties
+        const formattedExperiences: FormattedListing[] = expData.map(exp => ({
           ...exp,
           type: 'experience',
           price: exp.price_per_person,

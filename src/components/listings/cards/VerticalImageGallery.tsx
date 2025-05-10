@@ -1,6 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
 
 interface VerticalImageGalleryProps {
   images: string[];
@@ -27,13 +33,22 @@ const VerticalImageGallery: React.FC<VerticalImageGalleryProps> = ({ images, alt
           transition={{ duration: 0.3, delay: index * 0.1 }}
           className="relative rounded-lg overflow-hidden"
         >
-          <img
-            src={image}
-            alt={`${alt} - Image ${index + 1}`}
-            className="w-full h-auto rounded-lg object-cover"
-            style={{ aspectRatio: '16/9' }}
-            loading="lazy"
-          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <img
+                  src={image}
+                  alt={`${alt} - Image ${index + 1}`}
+                  className="w-full h-auto rounded-lg object-cover"
+                  style={{ aspectRatio: '16/9' }}
+                  loading="lazy"
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Image {index + 1} of {images.length}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </motion.div>
       ))}
     </div>

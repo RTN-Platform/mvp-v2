@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -185,6 +186,12 @@ const Header: React.FC = () => {
                       <Link to="/admin/users" className="w-full cursor-pointer">
                         <Users className="mr-2 h-4 w-4" />
                         <span>User Management</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/messaging" className="w-full cursor-pointer">
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        <span>Messaging</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>

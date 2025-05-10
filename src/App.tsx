@@ -13,6 +13,11 @@ import EditProfile from "@/pages/EditProfile";
 import Tribe from "@/pages/Tribe";
 import ResetPassword from "@/pages/ResetPassword";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
+import Dashboard from "@/pages/admin/Dashboard";
+import UserManagement from "@/pages/admin/UserManagement";
+import AuditLogs from "@/pages/admin/AuditLogs";
+import ContentManagement from "@/pages/admin/ContentManagement";
+import Messaging from "@/pages/admin/Messaging";
 import NotFound from "@/pages/NotFound";
 import Messages from "@/pages/Messages";
 import Notifications from "@/pages/Notifications";
@@ -76,14 +81,36 @@ function App() {
             />
             
             {/* Admin routes */}
-            <Route 
-              path="/admin/*" 
-              element={
-                <RoleGuard allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </RoleGuard>
-              } 
-            />
+            <Route path="/admin" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <AdminDashboard />
+              </RoleGuard>
+            } />
+            <Route path="/admin/dashboard" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <Dashboard />
+              </RoleGuard>
+            } />
+            <Route path="/admin/users" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <UserManagement />
+              </RoleGuard>
+            } />
+            <Route path="/admin/audit-logs" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <AuditLogs />
+              </RoleGuard>
+            } />
+            <Route path="/admin/content" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <ContentManagement />
+              </RoleGuard>
+            } />
+            <Route path="/admin/messaging" element={
+              <RoleGuard allowedRoles={['admin']}>
+                <Messaging />
+              </RoleGuard>
+            } />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

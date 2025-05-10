@@ -30,6 +30,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
   useEffect(() => {
     if (user) {
       fetchContacts();
+      fetchAllConnections(); // Fetch all connections when component loads
     }
   }, [user]);
 
@@ -112,14 +113,18 @@ const ContactsList: React.FC<ContactsListProps> = ({
     }
   };
 
-  const openNewMessageDialog = async () => {
+  // Fetch all tribe connections to display in contacts
+  const fetchAllConnections = async () => {
+    if (!user?.id) return;
+
     try {
-      // Get all connections (tribe members the user is connected to)
+      // Get all connected tribe members
       const { data, error } = await supabase
         .from('connections')
         .select(`
           invitee_id,
-          inviter_id
+          inviter_id,
+          status
         `)
         .or(`invitee_id.eq.${user?.id},inviter_id.eq.${user?.id}`)
         .eq('status', 'connected');
@@ -131,16 +136,12 @@ const ContactsList: React.FC<ContactsListProps> = ({
         conn.invitee_id === user?.id ? conn.inviter_id : conn.invitee_id
       ) || [];
       
-      // Filter out connections that already have a conversation
-      const existingContactIds = contacts.map(contact => contact.id);
-      const newConnectionIds = connectedUserIds.filter(id => !existingContactIds.includes(id));
-      
-      if (newConnectionIds.length > 0) {
+      if (connectedUserIds.length > 0) {
         // Get profile details for these connections
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url')
-          .in('id', newConnectionIds);
+          .in('id', connectedUserIds);
         
         if (profileError) throw profileError;
         
@@ -149,19 +150,30 @@ const ContactsList: React.FC<ContactsListProps> = ({
           connection_id: profile.id,
           connection: {
             id: profile.id,
-            full_name: profile.full_name,
+            full_name: profile.full_name || 'Unnamed User',
             avatar_url: profile.avatar_url
           }
         })) || [];
         
         setConnections(formattedConnections);
-      } else {
-        setConnections([]);
       }
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    }
+  };
+
+  const openNewMessageDialog = async () => {
+    try {
+      // Connections already loaded in state from fetchAllConnections
+      // Filter out connections that already have a conversation
+      const existingContactIds = contacts.map(contact => contact.id);
+      const availableConnections = connections.filter(
+        conn => !existingContactIds.includes(conn.connection_id)
+      );
       
       setShowNewMessageDialog(true);
     } catch (error) {
-      console.error('Error fetching connections:', error);
+      console.error('Error preparing new message dialog:', error);
     }
   };
 
@@ -193,6 +205,7 @@ const ContactsList: React.FC<ContactsListProps> = ({
     }
   };
 
+  // Filter contacts based on search query
   const filteredContacts = contacts.filter(contact => 
     contact.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

@@ -49,6 +49,8 @@ function App() {
         <Route path="/edit-profile" element={<EditProfile />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/favorites" element={<Wishlist />} /> {/* Add alternate route for 'favorites' */}
+        <Route path="/favourites" element={<Wishlist />} /> {/* Add alternate route for 'favourites' with British spelling */}
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/become-host" element={<BecomeHost />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -72,6 +74,7 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} /> {/* Add explicit dashboard route */}
           <Route path="users" element={<UserManagement />} />
           <Route path="users/:id" element={<UserProfileView />} />
           <Route path="content" element={<ContentManagement />} />

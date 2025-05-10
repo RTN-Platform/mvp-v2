@@ -16,7 +16,8 @@ type ListingCardProps = {
   isPublished: boolean;
   hostId?: string;
   isAdmin?: boolean;
-  linkTo?: string;
+  type?: string; // Added type property
+  detailUrl?: string;
   onEditClick?: (id: string) => void;
   onDeleteClick?: (id: string) => void;
 };
@@ -32,7 +33,8 @@ const ListingCard: React.FC<ListingCardProps> = ({
   isPublished,
   hostId,
   isAdmin = false,
-  linkTo,
+  type,
+  detailUrl,
   onEditClick,
   onDeleteClick,
 }) => {

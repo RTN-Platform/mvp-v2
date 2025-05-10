@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, Tent, Filter, Search as SearchIcon } from "lucide-react";
+import { Home, Tent, Search as SearchIcon } from "lucide-react";
 import ListingCard from "@/components/listings/cards/ListingCard";
 
 const Experiences: React.FC = () => {

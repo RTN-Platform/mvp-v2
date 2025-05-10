@@ -1,45 +1,31 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { MapPin, Star, Clock, Calendar as CalendarIcon, Check } from "lucide-react";
-import CommentSection from "@/components/comments/CommentSection";
 import { useIsMobile } from "@/hooks/use-mobile";
-import HostInfoBadge from "@/components/listings/cards/HostInfoBadge";
-import VerticalImageGallery from "@/components/listings/cards/VerticalImageGallery";
+
+// Imported refactored components
+import ExperienceHeader from "@/components/experiences/ExperienceHeader";
+import ExperienceGallery from "@/components/experiences/ExperienceGallery";
+import ExperienceDescription from "@/components/experiences/ExperienceDescription";
+import ExperienceItinerary from "@/components/experiences/ExperienceItinerary";
+import ExperienceReviews from "@/components/experiences/ExperienceReviews";
+import BookingWidget from "@/components/experiences/BookingWidget";
 
 const ExperienceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [participants, setParticipants] = useState(1);
   const isMobile = useIsMobile();
   const [showCarousel, setShowCarousel] = useState(true);
-  
-  // Toggle between carousel and vertical gallery view
-  const toggleImageDisplay = () => {
-    setShowCarousel(!showCarousel);
-  };
   
   // Mock data for the experience detail page
   // In a real application, this would be fetched from an API based on the ID
   const experiences = [
     {
       id: "hiking-banff",
-      host_id: "e07a73ae-f62b-4d12-9fab-7df519afd5bb", // Added host_id field
+      host_id: "e07a73ae-f62b-4d12-9fab-7df519afd5bb",
       title: "Guided Hiking Tour in Banff",
       location: "Banff National Park, AB",
       tagline: "Experience the breathtaking beauty of the Canadian Rockies",
@@ -79,7 +65,7 @@ const ExperienceDetail: React.FC = () => {
     },
     {
       id: "costa-rica-rainforest",
-      host_id: "f12a89bc-e34d-5678-9012-3456def78901", // Added host_id field
+      host_id: "f12a89bc-e34d-5678-9012-3456def78901",
       title: "Costa Rica Rainforest Experience",
       location: "Costa Rica",
       tagline: "Immerse yourself in the vibrant ecosystem of a tropical rainforest",
@@ -133,87 +119,31 @@ const ExperienceDetail: React.FC = () => {
     );
   }
 
-  const handleBookNow = () => {
+  const handleBookNow = (date?: Date, participants: number = 1) => {
     alert(`Booking for ${experience.title} on ${date?.toDateString() || 'selected date'} for ${participants} participants`);
     // Here you would typically redirect to a checkout or reservation page
+  };
+
+  const toggleImageDisplay = () => {
+    setShowCarousel(!showCarousel);
   };
 
   return (
     <MainLayout>
       <div className="py-4 px-4 md:px-6 max-w-5xl mx-auto">
         {/* Hero section with image display options */}
-        <div className="mb-6 md:mb-8">
-          {showCarousel ? (
-            <Carousel className="w-full">
-              <CarouselContent>
-                {experience.images.map((image, index) => (
-                  <CarouselItem key={index}>
-                    <div className="relative h-[250px] sm:h-[300px] md:h-[400px] lg:h-[450px] overflow-hidden rounded-lg">
-                      <img
-                        src={image}
-                        alt={`${experience.title} - image ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-2" />
-              <CarouselNext className="right-2" />
-            </Carousel>
-          ) : (
-            <VerticalImageGallery 
-              images={experience.images}
-              alt={experience.title}
-            />
-          )}
-          <div className="flex justify-end mt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={toggleImageDisplay}
-            >
-              {showCarousel ? "View as Gallery" : "View as Carousel"}
-            </Button>
-          </div>
-        </div>
+        <ExperienceGallery 
+          images={experience.images}
+          title={experience.title}
+          showCarousel={showCarousel}
+          onToggleView={toggleImageDisplay}
+        />
 
         {/* Main content layout that adapts to screen size */}
         <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-6 lg:gap-8`}>
           {/* Left column - Experience details */}
           <div className="lg:col-span-2">
-            <div className="mb-6">
-              <div className="flex flex-wrap gap-2 mb-4">
-                {experience.tags.map((tag, idx) => (
-                  <Badge key={idx} variant="outline" className="bg-nature-50 text-nature-700 border-nature-200">
-                    #{tag}
-                  </Badge>
-                ))}
-              </div>
-              
-              <div className="flex items-start gap-3 mb-3">
-                <HostInfoBadge hostId={experience.host_id} />
-              </div>
-
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{experience.title}</h1>
-              <p className="text-lg text-gray-600 mb-3">{experience.tagline}</p>
-              
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <div className="flex items-center">
-                  <MapPin size={16} className="text-gray-500 mr-1" />
-                  <span className="text-gray-600">{experience.location}</span>
-                </div>
-                <div className="flex items-center">
-                  <Star size={16} className="text-yellow-500 mr-1" />
-                  <span className="font-medium">{experience.rating}</span>
-                  <span className="text-gray-500 ml-1">({experience.reviewCount} reviews)</span>
-                </div>
-                <div className="flex items-center">
-                  <Clock size={16} className="text-gray-500 mr-1" />
-                  <span className="text-gray-600">{experience.duration}</span>
-                </div>
-              </div>
-            </div>
+            <ExperienceHeader experience={experience} />
 
             <Tabs defaultValue="description" className="mb-8">
               <TabsList className="mb-2 w-full sm:w-auto">
@@ -223,128 +153,31 @@ const ExperienceDetail: React.FC = () => {
               </TabsList>
               
               <TabsContent value="description" className="mt-4 space-y-4">
-                <div>
-                  <p className="text-gray-700 mb-4">{experience.description}</p>
-                  <h3 className="font-semibold text-lg mb-3">What's included:</h3>
-                  <ul className="space-y-2">
-                    {experience.includes.map((item, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <Check size={18} className="text-nature-600 mr-2 mt-1 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                {/* Comments section integrated directly after "what's included" */}
-                <Separator className="my-6" />
-                <CommentSection experienceId={experience.id} />
+                <ExperienceDescription 
+                  experienceId={experience.id}
+                  description={experience.description}
+                  includes={experience.includes}
+                />
               </TabsContent>
               
               <TabsContent value="itinerary" className="mt-4">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg mb-2">Your day at a glance:</h3>
-                  <ol className="space-y-4">
-                    {experience.itinerary.map((item, idx) => (
-                      <li key={idx} className="flex flex-col sm:flex-row">
-                        <div className="font-medium text-nature-700 w-24 flex-shrink-0 mb-1 sm:mb-0">
-                          {item.time}
-                        </div>
-                        <div>
-                          <p>{item.activity}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                <ExperienceItinerary itinerary={experience.itinerary} />
               </TabsContent>
               
               <TabsContent value="reviews" className="mt-4">
-                <div className="space-y-6">
-                  {experience.reviews.map((review, idx) => (
-                    <div key={idx} className="border-b pb-4 last:border-b-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{review.author}</h4>
-                        <div className="flex items-center">
-                          <Star size={16} className="text-yellow-500" />
-                          <span className="ml-1">{review.rating}</span>
-                        </div>
-                      </div>
-                      <p className="text-gray-600">{review.comment}</p>
-                    </div>
-                  ))}
-                </div>
+                <ExperienceReviews reviews={experience.reviews} />
               </TabsContent>
             </Tabs>
           </div>
 
           {/* Right column - Booking widget that becomes full width on mobile */}
           <div className="lg:col-span-1">
-            <Card className={isMobile ? "w-full" : "sticky top-24"}>
-              <CardContent className="p-4 md:p-6">
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Book this experience</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl font-bold text-nature-800">{experience.price}</span>
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Select date</label>
-                    <div className="border rounded-md p-1 overflow-x-auto max-w-full">
-                      <div className="min-w-[280px]">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={setDate}
-                          disabled={(date) => date < new Date()}
-                          className="pointer-events-auto"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Participants</label>
-                    <div className="flex items-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setParticipants(p => Math.max(1, p - 1))}
-                        disabled={participants <= 1}
-                        className="h-10 w-10"
-                        aria-label="Decrease participants"
-                      >
-                        -
-                      </Button>
-                      <span className="mx-4 w-8 text-center">{participants}</span>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setParticipants(p => p + 1)}
-                        className="h-10 w-10"
-                        aria-label="Increase participants"
-                      >
-                        +
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleBookNow} 
-                  className="w-full bg-nature-600 hover:bg-nature-700 text-white"
-                  disabled={!date}
-                >
-                  {date ? 'Book Now' : 'Select a date'}
-                </Button>
-              </CardContent>
-            </Card>
+            <div className={isMobile ? "w-full" : "sticky top-24"}>
+              <BookingWidget
+                price={experience.price}
+                onBookNow={handleBookNow}
+              />
+            </div>
           </div>
         </div>
       </div>

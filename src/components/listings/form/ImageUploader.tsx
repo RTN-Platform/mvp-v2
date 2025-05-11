@@ -1,13 +1,11 @@
 
-import React, { useRef, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import React, { useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
-import ImagePreview from "./imageUploader/ImagePreview";
-import UploadProgressItem from "./imageUploader/UploadProgressItem";
-import AddImageButton from "./imageUploader/AddImageButton";
-import ImageRequirements from "./imageUploader/ImageRequirements";
 import { useImageUpload } from "./imageUploader/useImageUpload";
+import ImageRequirements from "./imageUploader/ImageRequirements";
+import ImageGallery from "./imageUploader/ImageGallery";
+import UploadButton from "./imageUploader/UploadButton";
+import ImageUploadStatus from "./imageUploader/ImageUploadStatus";
 
 interface ImageUploaderProps {
   imageUrls: string[];
@@ -119,26 +117,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-4 mb-4">
-        {imageUrls.map((url, index) => (
-          <ImagePreview
-            key={url}
-            url={url}
-            index={index}
-            isCover={index === coverImageIndex}
-            onRemove={removeImage}
-            onSetCover={setCoverImageIndex}
-          />
-        ))}
-
-        {Object.entries(uploadProgress).map(([id, progress]) => (
-          progress < 100 && (
-            <UploadProgressItem key={id} progress={progress} />
-          )
-        ))}
-
-        <AddImageButton onClick={triggerFileInput} />
-      </div>
+      <ImageGallery 
+        imageUrls={imageUrls}
+        uploadProgress={uploadProgress}
+        coverImageIndex={coverImageIndex}
+        setCoverImageIndex={setCoverImageIndex}
+        onRemoveImage={removeImage}
+        onAddImageClick={triggerFileInput}
+      />
 
       <input 
         type="file" 
@@ -150,24 +136,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
         disabled={uploading}
       />
 
-      <Button 
-        type="button" 
-        variant="outline" 
-        className="w-full flex items-center justify-center"
+      <UploadButton 
         onClick={triggerFileInput}
-        disabled={uploading}
-      >
-        <Upload className="mr-2 h-4 w-4" />
-        {uploading ? 'Uploading...' : 'Upload Images'}
-      </Button>
+        isUploading={uploading}
+      />
 
       <ImageRequirements />
 
-      {imageUrls.length > 0 && (
-        <div className="text-sm text-gray-500">
-          {imageUrls.length} image{imageUrls.length !== 1 ? 's' : ''} uploaded. Click on the check icon to set your cover image.
-        </div>
-      )}
+      <ImageUploadStatus imageCount={imageUrls.length} />
     </div>
   );
 };

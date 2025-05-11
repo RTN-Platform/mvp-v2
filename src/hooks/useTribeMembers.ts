@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { TribeMemberInterface } from "@/components/tribe/TribeTabContent";
+import { TribeMemberInterface } from "@/components/tribe/TribeMember";
 
 export const useTribeMembers = () => {
   const [tribeMembers, setTribeMembers] = useState<TribeMemberInterface[]>([]);

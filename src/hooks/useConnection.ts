@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { TribeMemberInterface } from "@/components/tribe/TribeTabContent";
+import { TribeMemberInterface } from "@/components/tribe/TribeMember";
 
 export const useConnection = () => {
   const [connectingTo, setConnectingTo] = useState<TribeMemberInterface | null>(null);

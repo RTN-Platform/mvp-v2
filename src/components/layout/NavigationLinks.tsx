@@ -3,7 +3,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Map, Users, Heart, MessageSquare, ListFilter, BarChart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProfileType } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { isAdmin, isHost } from "@/utils/roles";
 
 interface NavIconProps {
@@ -38,7 +38,7 @@ export const NavIcon: React.FC<NavIconProps> = ({
 };
 
 interface NavigationLinksProps {
-  profile: ProfileType | null;
+  profile: any | null;
 }
 
 const NavigationLinks: React.FC<NavigationLinksProps> = ({ profile }) => {

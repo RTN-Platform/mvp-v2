@@ -3,15 +3,19 @@ import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { TribeMemberInterface } from "@/components/tribe/TribeMember";
+import { TribeMember } from "@/types/tribe";
 
 export const useConnection = () => {
-  const [connectingTo, setConnectingTo] = useState<TribeMemberInterface | null>(null);
+  const [connectingTo, setConnectingTo] = useState<TribeMember | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const handleConnect = useCallback((memberId: string, members: TribeMemberInterface[]) => {
+  /**
+   * Handle selecting a member to connect with
+   */
+  const handleConnect = useCallback((memberId: string, members: TribeMember[]) => {
     const member = members.find(m => m.id === memberId);
     if (member) {
       setConnectingTo(member);
@@ -19,14 +23,18 @@ export const useConnection = () => {
     }
   }, []);
 
+  /**
+   * Send a connection request to another user
+   */
   const handleSendRequest = useCallback(async (message: string) => {
-    if (!user || !connectingTo) return;
+    if (!user || !connectingTo) return false;
     
     try {
+      setIsProcessing(true);
       console.log('Sending connection request to:', connectingTo.id);
       console.log('Message:', message);
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('connections')
         .insert([
           { inviter_id: user.id, invitee_id: connectingTo.id, message, status: 'pending' }
@@ -53,7 +61,7 @@ export const useConnection = () => {
           });
         }
         console.error('Error sending connection request:', error);
-        return;
+        return false;
       }
 
       console.log('Connection request sent successfully');
@@ -64,6 +72,7 @@ export const useConnection = () => {
       });
       
       setIsModalOpen(false);
+      setConnectingTo(null);
       return true;
     } catch (error) {
       console.error('Error sending connection request:', error);
@@ -73,14 +82,52 @@ export const useConnection = () => {
         variant: "destructive"
       });
       return false;
+    } finally {
+      setIsProcessing(false);
     }
   }, [user, connectingTo, toast]);
+
+  /**
+   * Check if a connection request exists between the current user and another user
+   */
+  const checkConnectionStatus = useCallback(async (userId: string) => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .select('id, status')
+        .or(`inviter_id.eq.${user.id},invitee_id.eq.${user.id}`)
+        .or(`inviter_id.eq.${userId},invitee_id.eq.${userId}`);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        return {
+          exists: true,
+          status: data[0].status,
+          id: data[0].id
+        };
+      }
+      
+      return {
+        exists: false,
+        status: null,
+        id: null
+      };
+    } catch (error) {
+      console.error('Error checking connection status:', error);
+      return null;
+    }
+  }, [user]);
 
   return {
     connectingTo,
     isModalOpen,
+    isProcessing,
     setIsModalOpen,
     handleConnect,
-    handleSendRequest
+    handleSendRequest,
+    checkConnectionStatus
   };
 };

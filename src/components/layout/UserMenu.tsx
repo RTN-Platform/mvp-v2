@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,12 +24,11 @@ import {
   ListFilter 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ProfileType } from "@/contexts/AuthContext";
 import { isAdmin, isHost } from "@/utils/roles";
 
 interface UserMenuProps {
   user: any;
-  profile: ProfileType | null;
+  profile: any | null;
   signOut: () => void;
 }
 

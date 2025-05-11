@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ConnectionRequest {
   id: string;
   inviter_id: string;
-  message: string;
+  message: string | null;
   created_at: string;
   profiles: {
     id: string;
@@ -24,7 +24,7 @@ export const useConnectionRequests = () => {
     if (!userId) return [];
     
     try {
-      // Use a direct join query instead of relying on RPC functions
+      // Fix join relation by using proper syntax and table reference
       const { data, error } = await supabase
         .from('connections')
         .select(`
@@ -32,14 +32,14 @@ export const useConnectionRequests = () => {
           inviter_id,
           message, 
           created_at,
-          profiles:profiles!inviter_id(id, full_name, avatar_url)
+          profiles:inviter_id(id, full_name, avatar_url)
         `)
         .eq('invitee_id', userId)
         .eq('status', 'pending');
 
       if (error) throw error;
       
-      // Cast the data to the expected type
+      // Safely type cast the data
       const safeData = data || [];
       return safeData as ConnectionRequest[];
     } catch (error) {

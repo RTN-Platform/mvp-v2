@@ -18,21 +18,37 @@ export const useTribeMembers = () => {
       setIsLoading(true);
       try {
         // Get connected users (accepted connections)
-        // Instead of using RPC, we'll query the connections table directly
+        // Fix the join syntax to use correct foreign key references
         const { data: connectionsData, error: connectionsError } = await supabase
           .from('connections')
           .select(`
             id,
             status,
-            profiles:profiles!connections_invitee_id_fkey(
+            invitee_id,
+            profiles:invitee_id(
               id, full_name, avatar_url, location, bio, interests
             )
           `)
           .eq('inviter_id', user.id)
-          .eq('status', 'accepted')
-          .or(`invitee_id.eq.${user.id}`);
+          .eq('status', 'accepted');
 
         if (connectionsError) throw connectionsError;
+
+        // Also get connections where the user is the invitee
+        const { data: inviteeData, error: inviteeError } = await supabase
+          .from('connections')
+          .select(`
+            id,
+            status,
+            inviter_id,
+            profiles:inviter_id(
+              id, full_name, avatar_url, location, bio, interests
+            )
+          `)
+          .eq('invitee_id', user.id)
+          .eq('status', 'accepted');
+
+        if (inviteeError) throw inviteeError;
 
         // Get all profiles except the current user for potential connections
         const { data: allProfiles, error: profilesError } = await supabase
@@ -44,8 +60,27 @@ export const useTribeMembers = () => {
 
         // Process connected members
         const connected: TribeMember[] = [];
+        
+        // Process connections where user is inviter
         if (connectionsData) {
           connectionsData.forEach(connection => {
+            if (connection.profiles) {
+              connected.push({
+                id: connection.profiles.id,
+                full_name: connection.profiles.full_name,
+                avatar_url: connection.profiles.avatar_url,
+                location: connection.profiles.location,
+                bio: connection.profiles.bio,
+                interests: connection.profiles.interests,
+                connected: true
+              });
+            }
+          });
+        }
+        
+        // Process connections where user is invitee
+        if (inviteeData) {
+          inviteeData.forEach(connection => {
             if (connection.profiles) {
               connected.push({
                 id: connection.profiles.id,

@@ -10,7 +10,7 @@ interface TribeTabContentProps {
   onConnect: (id: string) => void;
   isConnected: boolean;
   emptyMessage: string;
-  noResultsMessage: string;
+  noResultsMessage?: string;
 }
 
 const TribeTabContent: React.FC<TribeTabContentProps> = ({

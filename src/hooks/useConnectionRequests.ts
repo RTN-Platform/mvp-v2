@@ -24,7 +24,7 @@ export const useConnectionRequests = () => {
     if (!userId) return [];
     
     try {
-      // Fix the query to correctly join with profiles table
+      // Use a direct join query instead of relying on RPC functions
       const { data, error } = await supabase
         .from('connections')
         .select(`
@@ -32,28 +32,15 @@ export const useConnectionRequests = () => {
           inviter_id,
           message, 
           created_at,
-          profiles:inviter_id(id, full_name, avatar_url)
+          profiles:profiles!inviter_id(id, full_name, avatar_url)
         `)
         .eq('invitee_id', userId)
         .eq('status', 'pending');
 
       if (error) throw error;
       
-      // Safely cast the data to the expected type
-      const safeData = data ? data.map(item => {
-        return {
-          id: item.id,
-          inviter_id: item.inviter_id,
-          message: item.message,
-          created_at: item.created_at,
-          profiles: {
-            id: item.profiles?.id || '',
-            full_name: item.profiles?.full_name || null,
-            avatar_url: item.profiles?.avatar_url || null
-          }
-        };
-      }) : [];
-
+      // Cast the data to the expected type
+      const safeData = data || [];
       return safeData as ConnectionRequest[];
     } catch (error) {
       console.error("Error fetching connection requests:", error);
@@ -141,50 +128,7 @@ export const useConnectionRequests = () => {
 
   return {
     connectionRequests,
-    handleAcceptConnection: useCallback(async (connectionId: string) => {
-      if (!user) return false;
-      
-      try {
-        // Update the connection status
-        const { error } = await supabase
-          .from('connections')
-          .update({ status: 'accepted' })
-          .eq('id', connectionId)
-          .eq('invitee_id', user.id);
-        
-        if (error) throw error;
-
-        // Remove from connection requests list
-        setConnectionRequests(prev => prev.filter(req => req.id !== connectionId));
-        
-        return true;
-      } catch (error) {
-        console.error("Error accepting connection:", error);
-        return false;
-      }
-    }, [user]),
-
-    handleDeclineConnection: useCallback(async (connectionId: string) => {
-      if (!user) return false;
-      
-      try {
-        // Delete the connection
-        const { error } = await supabase
-          .from('connections')
-          .delete()
-          .eq('id', connectionId)
-          .eq('invitee_id', user.id);
-        
-        if (error) throw error;
-
-        // Remove from connection requests list
-        setConnectionRequests(prev => prev.filter(req => req.id !== connectionId));
-        
-        return true;
-      } catch (error) {
-        console.error("Error declining connection:", error);
-        return false;
-      }
-    }, [user])
+    handleAcceptConnection,
+    handleDeclineConnection
   };
 };

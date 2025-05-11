@@ -18,23 +18,70 @@ export const useTribeMembers = () => {
       setIsLoading(true);
       try {
         // Get connected users (accepted connections)
-        const { data: connectedData, error: connectedError } = await supabase.rpc(
-          'get_connected_members',
-          { current_user_id: user.id }
-        );
+        // Instead of using RPC, we'll query the connections table directly
+        const { data: connectionsData, error: connectionsError } = await supabase
+          .from('connections')
+          .select(`
+            id,
+            status,
+            profiles:profiles!connections_invitee_id_fkey(
+              id, full_name, avatar_url, location, bio, interests
+            )
+          `)
+          .eq('inviter_id', user.id)
+          .eq('status', 'accepted')
+          .or(`invitee_id.eq.${user.id}`);
 
-        if (connectedError) throw connectedError;
+        if (connectionsError) throw connectionsError;
 
-        // Get users to discover (not connected and not pending)
-        const { data: unconnectedData, error: unconnectedError } = await supabase.rpc(
-          'get_unconnected_members',
-          { current_user_id: user.id }
-        );
+        // Get all profiles except the current user for potential connections
+        const { data: allProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, location, bio, interests')
+          .neq('id', user.id);
 
-        if (unconnectedError) throw unconnectedError;
+        if (profilesError) throw profilesError;
 
-        // If RPC functions are not available, fallback to mock data
-        setConnectedMembers(connectedData || [
+        // Process connected members
+        const connected: TribeMember[] = [];
+        if (connectionsData) {
+          connectionsData.forEach(connection => {
+            if (connection.profiles) {
+              connected.push({
+                id: connection.profiles.id,
+                full_name: connection.profiles.full_name,
+                avatar_url: connection.profiles.avatar_url,
+                location: connection.profiles.location,
+                bio: connection.profiles.bio,
+                interests: connection.profiles.interests,
+                connected: true
+              });
+            }
+          });
+        }
+
+        // Process unconnected members (exclude already connected ones)
+        const connectedIds = new Set(connected.map(member => member.id));
+        const unconnected: TribeMember[] = allProfiles
+          ? allProfiles
+              .filter(profile => !connectedIds.has(profile.id))
+              .map(profile => ({
+                id: profile.id,
+                full_name: profile.full_name,
+                avatar_url: profile.avatar_url,
+                location: profile.location,
+                bio: profile.bio,
+                interests: profile.interests,
+                connected: false
+              }))
+          : [];
+
+        setConnectedMembers(connected);
+        setUnconnectedMembers(unconnected);
+      } catch (error) {
+        console.error('Error fetching tribe members:', error);
+        // Fallback to mock data if there's an error
+        setConnectedMembers([
           {
             id: '1',
             full_name: 'Jane Smith',
@@ -45,7 +92,7 @@ export const useTribeMembers = () => {
           }
         ]);
         
-        setUnconnectedMembers(unconnectedData || [
+        setUnconnectedMembers([
           {
             id: '2',
             full_name: 'John Doe',
@@ -55,11 +102,6 @@ export const useTribeMembers = () => {
             interests: ['Kayaking', 'Bird Watching']
           }
         ]);
-      } catch (error) {
-        console.error('Error fetching tribe members:', error);
-        // Fallback to empty arrays if there's an error
-        setConnectedMembers([]);
-        setUnconnectedMembers([]);
       } finally {
         setIsLoading(false);
       }

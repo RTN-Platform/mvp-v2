@@ -3,12 +3,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Message } from '@/types/message';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchMessages, fetchContactDetails, markMessagesAsRead, sendMessage } from '@/services/messaging';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMessaging = (selectedContactId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [contactName, setContactName] = useState("");
   const [contactAvatar, setContactAvatar] = useState<string | null>(null);
+  const [connectionRequests, setConnectionRequests] = useState<any[]>([]);
   const { user } = useAuth();
 
   // Fetch contact details function
@@ -36,6 +38,32 @@ export const useMessaging = (selectedContactId: string | null) => {
     }
   }, []);
 
+  // Fetch connection requests function
+  const fetchConnectionRequests = useCallback(async (userId: string) => {
+    if (!userId) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('connections')
+        .select(`
+          id, 
+          inviter_id,
+          message, 
+          created_at,
+          profiles:inviter_id (id, full_name, avatar_url)
+        `)
+        .eq('invitee_id', userId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching connection requests:", error);
+      return [];
+    }
+  }, []);
+
   // Mark messages as read function
   const markAsRead = useCallback(async (userId: string, contactId: string) => {
     try {
@@ -44,6 +72,36 @@ export const useMessaging = (selectedContactId: string | null) => {
       console.error("Error marking messages as read:", error);
     }
   }, []);
+
+  // Load connection requests
+  useEffect(() => {
+    if (user) {
+      (async () => {
+        const requests = await fetchConnectionRequests(user.id);
+        setConnectionRequests(requests);
+        
+        // Add realtime subscription for new connection requests
+        const channel = supabase
+          .channel('connections-changes')
+          .on('postgres_changes', 
+            {
+              event: '*', 
+              schema: 'public',
+              table: 'connections',
+              filter: `invitee_id=eq.${user.id}`
+            },
+            () => {
+              fetchConnectionRequests(user.id).then(setConnectionRequests);
+            }
+          )
+          .subscribe();
+          
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      })();
+    }
+  }, [user, fetchConnectionRequests]);
 
   // Load all messaging data
   const loadMessages = useCallback(async () => {
@@ -90,11 +148,62 @@ export const useMessaging = (selectedContactId: string | null) => {
     }
   }, [user, selectedContactId]);
 
+  // Handle accepting a connection request
+  const handleAcceptConnection = useCallback(async (connectionId: string) => {
+    if (!user) return false;
+    
+    try {
+      // Update the connection status
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'accepted' })
+        .eq('id', connectionId)
+        .eq('invitee_id', user.id);
+      
+      if (error) throw error;
+
+      // Remove from connection requests list
+      setConnectionRequests(prev => prev.filter(req => req.id !== connectionId));
+      
+      return true;
+    } catch (error) {
+      console.error("Error accepting connection:", error);
+      return false;
+    }
+  }, [user]);
+
+  // Handle declining a connection request
+  const handleDeclineConnection = useCallback(async (connectionId: string) => {
+    if (!user) return false;
+    
+    try {
+      // Delete the connection
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('id', connectionId)
+        .eq('invitee_id', user.id);
+      
+      if (error) throw error;
+
+      // Remove from connection requests list
+      setConnectionRequests(prev => prev.filter(req => req.id !== connectionId));
+      
+      return true;
+    } catch (error) {
+      console.error("Error declining connection:", error);
+      return false;
+    }
+  }, [user]);
+
   return {
     messages,
     isLoading,
     contactName,
     contactAvatar,
+    connectionRequests,
     handleSendMessage,
+    handleAcceptConnection,
+    handleDeclineConnection
   };
 };

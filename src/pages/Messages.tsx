@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import ContactsList from "@/components/messaging/ContactsList";
 import MessageContainer from "@/components/messaging/MessageContainer";
+import ConnectionRequests from "@/components/messaging/ConnectionRequests";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMessaging } from "@/hooks/useMessaging";
@@ -19,7 +20,10 @@ const Messages = () => {
     isLoading, 
     contactName, 
     contactAvatar, 
-    handleSendMessage 
+    connectionRequests,
+    handleSendMessage,
+    handleAcceptConnection,
+    handleDeclineConnection
   } = useMessaging(selectedContactId);
 
   useEffect(() => {
@@ -41,7 +45,14 @@ const Messages = () => {
   return (
     <MainLayout>
       <div className="flex h-[calc(100vh-6rem)] bg-white border rounded-lg overflow-hidden">
-        <div className="w-1/3 border-r">
+        <div className="w-1/3 border-r flex flex-col">
+          {connectionRequests && connectionRequests.length > 0 && (
+            <ConnectionRequests 
+              requests={connectionRequests}
+              onAccept={handleAcceptConnection}
+              onDecline={handleDeclineConnection}
+            />
+          )}
           <ContactsList 
             selectedContactId={selectedContactId}
             onSelectContact={handleSelectContact}

@@ -7,11 +7,6 @@ import { FileText, Home } from "lucide-react";
 const ContentManagement: React.FC = () => {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Content Management</h1>
-        <p className="text-gray-600">Manage and moderate platform content</p>
-      </div>
-
       <Tabs defaultValue="listings" className="w-full">
         <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="listings">

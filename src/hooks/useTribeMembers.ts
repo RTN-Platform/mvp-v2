@@ -17,31 +17,26 @@ export const useTribeMembers = () => {
     const fetchTribeMembers = async () => {
       setIsLoading(true);
       try {
-        // Get connected users (accepted connections)
-        // Fix the join syntax to use correct foreign key references
-        const { data: connectionsData, error: connectionsError } = await supabase
+        // Get connected users (accepted connections) where user is inviter
+        const { data: inviterConnections, error: inviterError } = await supabase
           .from('connections')
           .select(`
-            id,
-            status,
             invitee_id,
-            profiles:invitee_id(
+            profiles:profiles(
               id, full_name, avatar_url, location, bio, interests
             )
           `)
           .eq('inviter_id', user.id)
           .eq('status', 'accepted');
 
-        if (connectionsError) throw connectionsError;
+        if (inviterError) throw inviterError;
 
-        // Also get connections where the user is the invitee
-        const { data: inviteeData, error: inviteeError } = await supabase
+        // Get connected users where user is invitee
+        const { data: inviteeConnections, error: inviteeError } = await supabase
           .from('connections')
           .select(`
-            id,
-            status,
             inviter_id,
-            profiles:inviter_id(
+            profiles:profiles(
               id, full_name, avatar_url, location, bio, interests
             )
           `)
@@ -50,7 +45,7 @@ export const useTribeMembers = () => {
 
         if (inviteeError) throw inviteeError;
 
-        // Get all profiles except the current user for potential connections
+        // Get all profiles except current user for potential connections
         const { data: allProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, location, bio, interests')
@@ -62,16 +57,17 @@ export const useTribeMembers = () => {
         const connected: TribeMember[] = [];
         
         // Process connections where user is inviter
-        if (connectionsData) {
-          connectionsData.forEach(connection => {
+        if (inviterConnections) {
+          inviterConnections.forEach(connection => {
             if (connection.profiles) {
+              const profileData = connection.profiles as any;
               connected.push({
-                id: connection.profiles.id,
-                full_name: connection.profiles.full_name,
-                avatar_url: connection.profiles.avatar_url,
-                location: connection.profiles.location,
-                bio: connection.profiles.bio,
-                interests: connection.profiles.interests,
+                id: profileData.id,
+                full_name: profileData.full_name,
+                avatar_url: profileData.avatar_url,
+                location: profileData.location,
+                bio: profileData.bio,
+                interests: profileData.interests,
                 connected: true
               });
             }
@@ -79,16 +75,17 @@ export const useTribeMembers = () => {
         }
         
         // Process connections where user is invitee
-        if (inviteeData) {
-          inviteeData.forEach(connection => {
+        if (inviteeConnections) {
+          inviteeConnections.forEach(connection => {
             if (connection.profiles) {
+              const profileData = connection.profiles as any;
               connected.push({
-                id: connection.profiles.id,
-                full_name: connection.profiles.full_name,
-                avatar_url: connection.profiles.avatar_url,
-                location: connection.profiles.location,
-                bio: connection.profiles.bio,
-                interests: connection.profiles.interests,
+                id: profileData.id,
+                full_name: profileData.full_name,
+                avatar_url: profileData.avatar_url,
+                location: profileData.location,
+                bio: profileData.bio,
+                interests: profileData.interests,
                 connected: true
               });
             }

@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import NavigationLinks from "@/components/layout/NavigationLinks";
@@ -8,6 +8,10 @@ import UserMenu from "@/components/layout/UserMenu";
 
 const Header: React.FC = () => {
   const { user, profile, signOut } = useAuth();
+  const location = useLocation();
+  
+  // Check if currently on an admin page
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <header className="border-b bg-white py-3 sticky top-0 z-10">
@@ -22,7 +26,7 @@ const Header: React.FC = () => {
           </Link>
         </div>
 
-        {user && (
+        {user && !isAdminRoute && (
           <NavigationLinks profile={profile} />
         )}
 

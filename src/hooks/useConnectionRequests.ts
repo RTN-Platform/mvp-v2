@@ -24,7 +24,7 @@ export const useConnectionRequests = () => {
     if (!userId) return [];
     
     try {
-      // Fix join relation by using proper syntax and table reference
+      // Join with profiles table directly using foreign key
       const { data, error } = await supabase
         .from('connections')
         .select(`
@@ -32,16 +32,20 @@ export const useConnectionRequests = () => {
           inviter_id,
           message, 
           created_at,
-          profiles:inviter_id(id, full_name, avatar_url)
+          profiles:profiles(id, full_name, avatar_url)
         `)
         .eq('invitee_id', userId)
         .eq('status', 'pending');
 
       if (error) throw error;
       
-      // Safely type cast the data
-      const safeData = data || [];
-      return safeData as ConnectionRequest[];
+      // Transform the data to match ConnectionRequest interface
+      const transformedData = (data || []).map(item => ({
+        ...item,
+        profiles: item.profiles as ConnectionRequest['profiles']
+      }));
+      
+      return transformedData;
     } catch (error) {
       console.error("Error fetching connection requests:", error);
       return [];

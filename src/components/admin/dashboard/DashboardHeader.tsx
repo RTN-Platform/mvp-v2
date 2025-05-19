@@ -30,8 +30,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Overview of platform performance and metrics</p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-1">Dashboard Overview</h1>
+        <p className="text-sm text-gray-600">Platform performance and metrics</p>
       </div>
       <div className="flex items-center gap-3">
         <Select 

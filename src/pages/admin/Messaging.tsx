@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Mail, Newspaper } from "lucide-react";
@@ -15,11 +14,6 @@ const Messaging = () => {
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Messaging</h1>
-        <p className="text-gray-600">Send newsletters, platform messages, and create front page posts.</p>
-      </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

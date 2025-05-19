@@ -24,28 +24,37 @@ export const useConnectionRequests = () => {
     if (!userId) return [];
     
     try {
-      // Join with profiles table directly using foreign key
-      const { data, error } = await supabase
+      // First get all connection requests for the user
+      const { data: connectionData, error: connectionError } = await supabase
         .from('connections')
-        .select(`
-          id, 
-          inviter_id,
-          message, 
-          created_at,
-          profiles:profiles(id, full_name, avatar_url)
-        `)
+        .select('id, inviter_id, message, created_at')
         .eq('invitee_id', userId)
         .eq('status', 'pending');
 
-      if (error) throw error;
+      if (connectionError) throw connectionError;
       
-      // Transform the data to match ConnectionRequest interface
-      const transformedData = (data || []).map(item => ({
-        ...item,
-        profiles: item.profiles as ConnectionRequest['profiles']
-      }));
+      // Then for each connection, get the inviter's profile data
+      const requests: ConnectionRequest[] = [];
       
-      return transformedData;
+      for (const connection of connectionData || []) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', connection.inviter_id)
+          .single();
+          
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          continue;
+        }
+        
+        requests.push({
+          ...connection,
+          profiles: profileData
+        });
+      }
+      
+      return requests;
     } catch (error) {
       console.error("Error fetching connection requests:", error);
       return [];

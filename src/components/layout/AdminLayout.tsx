@@ -72,9 +72,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <Header />
       
       <div className="container mx-auto px-4 py-6 md:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex justify-between items-center mb-6">
           {/* Breadcrumb navigation */}
-          <div className="flex items-center text-sm">
+          <div className="flex items-center">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
@@ -100,7 +100,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
-                  {currentSection?.icon}
+                  <Users className="h-4 w-4" />
                   {currentSection?.name || "Select Section"}
                   <ChevronDown className="h-4 w-4" />
                 </Button>

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, Mail, Newspaper } from "lucide-react";
 import NewsletterForm from "@/components/admin/messaging/NewsletterForm";
 import PlatformMessageForm from "@/components/admin/messaging/PlatformMessageForm";
@@ -17,12 +17,9 @@ const Messaging = () => {
     <AdminLayout>
       <div>
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Messaging Center</CardTitle>
-                <CardDescription>Communicate with your users through various channels</CardDescription>
-              </div>
+              <CardTitle>Messaging Center</CardTitle>
               <div className="flex gap-2">
                 <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "create" | "history")}>
                   <TabsList className="grid w-full grid-cols-2">

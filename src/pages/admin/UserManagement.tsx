@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus, UserX, ShieldCheck, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
+import AdminLayout from "@/components/layout/AdminLayout";
 
 // Fix: Add proper typing for profile data
 type Profile = {
@@ -89,14 +89,14 @@ const UserManagement: React.FC = () => {
   );
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+    <AdminLayout>
+      <div>
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+            <h2 className="text-2xl font-bold">User Management</h2>
             <p className="text-gray-600">Manage and monitor platform users</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <Button variant="outline">
               <UserPlus className="mr-2 h-4 w-4" /> Invite User
             </Button>
@@ -106,14 +106,16 @@ const UserManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search users..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex justify-end mb-6">
+          <div className="relative w-full md:w-[400px]">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search users..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
         <Card>
@@ -213,7 +215,7 @@ const UserManagement: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </MainLayout>
+    </AdminLayout>
   );
 };
 

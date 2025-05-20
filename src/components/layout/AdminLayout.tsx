@@ -71,9 +71,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="container mx-auto px-4 py-6 md:px-6 max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          {/* Breadcrumb navigation moved inline with dropdown */}
+      <div className="container mx-auto px-4 py-6 md:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          {/* Breadcrumb navigation */}
           <div className="flex items-center text-sm">
             <Breadcrumb>
               <BreadcrumbList>

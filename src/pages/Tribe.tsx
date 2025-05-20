@@ -70,6 +70,7 @@ const Tribe: React.FC = () => {
               isConnected={true}
               emptyMessage="You don't have any connections yet. Discover and connect with other tribe members."
               noResultsMessage="No connections found for your search."
+              searchQuery={searchQuery}
             />
           </TabsContent>
 
@@ -81,6 +82,7 @@ const Tribe: React.FC = () => {
               isConnected={false}
               emptyMessage="No new tribe members to discover at the moment."
               noResultsMessage="No tribe members found for your search."
+              searchQuery={searchQuery}
             />
           </TabsContent>
         </Tabs>

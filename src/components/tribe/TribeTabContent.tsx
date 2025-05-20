@@ -11,6 +11,7 @@ interface TribeTabContentProps {
   isConnected: boolean;
   emptyMessage: string;
   noResultsMessage?: string;
+  searchQuery?: string;
 }
 
 const TribeTabContent: React.FC<TribeTabContentProps> = ({
@@ -19,7 +20,8 @@ const TribeTabContent: React.FC<TribeTabContentProps> = ({
   onConnect,
   isConnected,
   emptyMessage,
-  noResultsMessage
+  noResultsMessage,
+  searchQuery
 }) => {
   // Loading skeletons
   if (isLoading) {
@@ -47,11 +49,20 @@ const TribeTabContent: React.FC<TribeTabContentProps> = ({
     );
   }
 
-  // No members at all
-  if (members.length === 0) {
+  // No members at all when not searching
+  if (members.length === 0 && !searchQuery) {
     return (
       <div className="bg-white rounded-lg p-8 text-center">
         <p className="text-gray-500">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  // No search results
+  if (members.length === 0 && searchQuery && searchQuery.trim() !== '') {
+    return (
+      <div className="bg-white rounded-lg p-8 text-center">
+        <p className="text-gray-500">{noResultsMessage || `No ${isConnected ? 'connections' : 'members'} found for "${searchQuery}"`}</p>
       </div>
     );
   }

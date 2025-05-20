@@ -11,6 +11,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Users, Home, FileText, MessageSquare, FileBarChart } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -64,13 +72,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <Header />
       
       <div className="container mx-auto px-4 py-6 md:px-6 max-w-7xl">
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-            <p className="text-gray-600">Manage and monitor the platform from a central location.</p>
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          {/* Breadcrumb navigation moved inline with dropdown */}
+          <div className="flex items-center text-sm">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/admin" className="text-nature-600 hover:text-nature-800">
+                      Admin
+                    </Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                {currentSection && (
+                  <>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{currentSection.name}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </>
+                )}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
           
-          <div className="mt-4 md:mt-0">
+          <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
@@ -91,19 +117,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-        
-        {/* Breadcrumbs for better navigation context */}
-        <div className="mb-6 flex items-center text-sm">
-          <Link to="/admin" className="text-nature-600 hover:text-nature-800">
-            Admin
-          </Link>
-          {currentSection && (
-            <>
-              <span className="mx-2 text-gray-500">/</span>
-              <span className="text-gray-600">{currentSection.name}</span>
-            </>
-          )}
         </div>
         
         {/* Main content area */}

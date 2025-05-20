@@ -22,22 +22,22 @@ const Messaging = () => {
               <CardDescription>Communicate with your users through various channels</CardDescription>
             </div>
             <div className="flex gap-2">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger 
-                  value="create" 
-                  onClick={() => setViewMode("create")}
-                  className={viewMode === "create" ? "bg-nature-100" : ""}
-                >
-                  Create New
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="history" 
-                  onClick={() => setViewMode("history")}
-                  className={viewMode === "history" ? "bg-nature-100" : ""}
-                >
-                  Message History
-                </TabsTrigger>
-              </TabsList>
+              <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "create" | "history")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger 
+                    value="create"
+                    className={viewMode === "create" ? "bg-nature-100" : ""}
+                  >
+                    Create New
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="history"
+                    className={viewMode === "history" ? "bg-nature-100" : ""}
+                  >
+                    Message History
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
         </CardHeader>

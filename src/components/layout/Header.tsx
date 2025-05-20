@@ -18,7 +18,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 flex justify-between items-center max-w-4xl">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center">
-            <img src="/lovable-uploads/b024962f-3a9d-42e3-9da7-aaf03202e224.png" alt="Resort to Nature" className="h-12 md:h-14" />
+            <img src="/lovable-uploads/b024962f-3a9d-42e3-9da7-aaf03202e224.png" alt="Resort to Nature" className="h-11 md:h-13" />
           </Link>
         </div>
 

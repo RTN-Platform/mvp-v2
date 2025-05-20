@@ -17,35 +17,7 @@ export const useTribeMembers = () => {
     const fetchTribeMembers = async () => {
       setIsLoading(true);
       try {
-        // Get connected users (accepted connections) where user is inviter
-        const { data: inviterConnections, error: inviterError } = await supabase
-          .from('connections')
-          .select(`
-            invitee_id,
-            profiles:profiles(
-              id, full_name, avatar_url, location, bio, interests
-            )
-          `)
-          .eq('inviter_id', user.id)
-          .eq('status', 'accepted');
-
-        if (inviterError) throw inviterError;
-
-        // Get connected users where user is invitee
-        const { data: inviteeConnections, error: inviteeError } = await supabase
-          .from('connections')
-          .select(`
-            inviter_id,
-            profiles:profiles(
-              id, full_name, avatar_url, location, bio, interests
-            )
-          `)
-          .eq('invitee_id', user.id)
-          .eq('status', 'accepted');
-
-        if (inviteeError) throw inviteeError;
-
-        // Get all profiles except current user for potential connections
+        // First, fetch all profiles except the current user
         const { data: allProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url, location, bio, interests')
@@ -53,63 +25,59 @@ export const useTribeMembers = () => {
 
         if (profilesError) throw profilesError;
 
-        // Process connected members
-        const connected: TribeMember[] = [];
+        // Then get all connections for current user
+        const { data: connections, error: connectionsError } = await supabase
+          .from('connections')
+          .select('inviter_id, invitee_id, status')
+          .or(`inviter_id.eq.${user.id},invitee_id.eq.${user.id}`)
+          .eq('status', 'accepted');
+
+        if (connectionsError) throw connectionsError;
+
+        // Create a Set of connected user IDs
+        const connectedIds = new Set<string>();
         
-        // Process connections where user is inviter
-        if (inviterConnections) {
-          inviterConnections.forEach(connection => {
-            if (connection.profiles) {
-              const profileData = connection.profiles as any;
-              connected.push({
-                id: profileData.id,
-                full_name: profileData.full_name,
-                avatar_url: profileData.avatar_url,
-                location: profileData.location,
-                bio: profileData.bio,
-                interests: profileData.interests,
-                connected: true
-              });
-            }
-          });
-        }
-        
-        // Process connections where user is invitee
-        if (inviteeConnections) {
-          inviteeConnections.forEach(connection => {
-            if (connection.profiles) {
-              const profileData = connection.profiles as any;
-              connected.push({
-                id: profileData.id,
-                full_name: profileData.full_name,
-                avatar_url: profileData.avatar_url,
-                location: profileData.location,
-                bio: profileData.bio,
-                interests: profileData.interests,
-                connected: true
-              });
+        if (connections) {
+          connections.forEach(connection => {
+            // If user is the inviter, add the invitee to connected IDs
+            if (connection.inviter_id === user.id) {
+              connectedIds.add(connection.invitee_id);
+            } 
+            // If user is the invitee, add the inviter to connected IDs
+            else if (connection.invitee_id === user.id) {
+              connectedIds.add(connection.inviter_id);
             }
           });
         }
 
-        // Process unconnected members (exclude already connected ones)
-        const connectedIds = new Set(connected.map(member => member.id));
-        const unconnected: TribeMember[] = allProfiles
-          ? allProfiles
-              .filter(profile => !connectedIds.has(profile.id))
-              .map(profile => ({
-                id: profile.id,
-                full_name: profile.full_name,
-                avatar_url: profile.avatar_url,
-                location: profile.location,
-                bio: profile.bio,
-                interests: profile.interests,
-                connected: false
-              }))
-          : [];
+        // Process all profiles and separate into connected and unconnected
+        const connected: TribeMember[] = [];
+        const unconnected: TribeMember[] = [];
+        
+        if (allProfiles) {
+          allProfiles.forEach(profile => {
+            const memberData: TribeMember = {
+              id: profile.id,
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url,
+              location: profile.location,
+              bio: profile.bio,
+              interests: profile.interests,
+              connected: connectedIds.has(profile.id)
+            };
+            
+            if (connectedIds.has(profile.id)) {
+              connected.push(memberData);
+            } else {
+              unconnected.push(memberData);
+            }
+          });
+        }
 
         setConnectedMembers(connected);
         setUnconnectedMembers(unconnected);
+        
+        console.log(`Loaded ${connected.length} connected members and ${unconnected.length} unconnected members`);
       } catch (error) {
         console.error('Error fetching tribe members:', error);
         // Fallback to mock data if there's an error
@@ -148,7 +116,7 @@ export const useTribeMembers = () => {
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.interests?.some(interest => 
-          interest.toLowerCase().includes(searchQuery.toLowerCase())
+          interest?.toLowerCase().includes(searchQuery.toLowerCase())
         )
       )
     : connectedMembers;
@@ -158,7 +126,7 @@ export const useTribeMembers = () => {
         member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.interests?.some(interest => 
-          interest.toLowerCase().includes(searchQuery.toLowerCase())
+          interest?.toLowerCase().includes(searchQuery.toLowerCase())
         )
       )
     : unconnectedMembers;

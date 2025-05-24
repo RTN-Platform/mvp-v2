@@ -2,7 +2,6 @@
 import React from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import Header from "./Header";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -64,11 +63,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="container mx-auto px-4 py-6 md:px-6">
-        <div className="flex justify-between items-center mb-6">
-          {/* Breadcrumb navigation */}
+      <header className="border-b bg-white sticky top-0 z-10 py-0">
+        <div className="container mx-auto px-4 flex justify-between items-center max-w-4xl">
+          <div className="flex items-center gap-2">
+            <Link to="/" className="flex items-center">
+              <img src="/lovable-uploads/b024962f-3a9d-42e3-9da7-aaf03202e224.png" alt="Resort to Nature" className="h-11 md:h-13" />
+            </Link>
+          </div>
+
           <div className="flex items-center">
             <Breadcrumb>
               <BreadcrumbList>
@@ -113,7 +115,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </DropdownMenu>
           </div>
         </div>
-        
+      </header>
+      
+      <div className="container mx-auto px-4 py-6 md:px-6">
         {/* Main content area */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           {children}

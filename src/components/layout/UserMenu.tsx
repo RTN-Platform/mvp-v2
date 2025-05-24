@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -125,38 +126,14 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, profile, signOut }) => {
           </DropdownMenuItem>
         )}
         
-        {/* Admin-only menu items */}
+        {/* Admin-only menu item - simplified to just one link */}
         {isAdmin(profile) && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/admin" className="w-full cursor-pointer">
                 <Shield className="mr-2 h-4 w-4" />
-                <span>Admin Dashboard</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/dashboard" className="w-full cursor-pointer">
-                <BarChart className="mr-2 h-4 w-4" />
-                <span>Analytics Dashboard</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/users" className="w-full cursor-pointer">
-                <UsersIcon className="mr-2 h-4 w-4" />
-                <span>User Management</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/messaging" className="w-full cursor-pointer">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                <span>Messaging</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/admin/audit-logs" className="w-full cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Audit Logs</span>
+                <span>Admin Overview</span>
               </Link>
             </DropdownMenuItem>
           </>

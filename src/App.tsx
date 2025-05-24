@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
@@ -38,6 +37,7 @@ import { Toaster } from "./components/ui/toaster";
 import RoleGuard from "./components/auth/RoleGuard";
 import StorageInit from "./components/App/StorageInit";
 import MainLayout from "./components/layout/MainLayout";
+import AdminLayout from "./components/layout/AdminLayout";
 
 function App() {
   return (
@@ -66,12 +66,14 @@ function App() {
         <Route path="/experiences" element={<MainLayout><Experiences /></MainLayout>} />
         <Route path="/create-update" element={<MainLayout><CreateUpdate /></MainLayout>} />
 
-        {/* Admin Routes - WITHOUT MainLayout wrapper */}
+        {/* Admin Routes - WITH AdminLayout wrapper */}
         <Route 
           path="/admin" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <Dashboard />
+              <AdminLayout>
+                <Dashboard />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -79,7 +81,9 @@ function App() {
           path="/admin/dashboard" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <Dashboard />
+              <AdminLayout>
+                <Dashboard />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -87,7 +91,9 @@ function App() {
           path="/admin/users" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <UserManagement />
+              <AdminLayout>
+                <UserManagement />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -95,7 +101,9 @@ function App() {
           path="/admin/users/:id" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <UserProfileView />
+              <AdminLayout>
+                <UserProfileView />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -103,7 +111,9 @@ function App() {
           path="/admin/content" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <ContentManagement />
+              <AdminLayout>
+                <ContentManagement />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -111,7 +121,9 @@ function App() {
           path="/admin/audit-logs" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <AuditLogs />
+              <AdminLayout>
+                <AuditLogs />
+              </AdminLayout>
             </RoleGuard>
           } 
         />
@@ -119,7 +131,9 @@ function App() {
           path="/admin/messaging" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <Messaging />
+              <AdminLayout>
+                <Messaging />
+              </AdminLayout>
             </RoleGuard>
           } 
         />

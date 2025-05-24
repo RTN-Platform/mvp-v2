@@ -20,6 +20,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
 
+  // Don't render MainLayout for admin routes
+  if (location.pathname.startsWith('/admin')) {
+    return <>{children}</>;
+  }
+
   // Redirect from /notifications to /messages
   useEffect(() => {
     if (location.pathname === "/notifications") {

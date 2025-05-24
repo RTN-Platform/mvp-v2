@@ -42,6 +42,13 @@ interface NavigationLinksProps {
 }
 
 const NavigationLinks: React.FC<NavigationLinksProps> = ({ profile }) => {
+  const location = useLocation();
+  
+  // Don't render navigation links on admin routes
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <nav className="hidden md:flex items-center space-x-8 relative">
       <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />

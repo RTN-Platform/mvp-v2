@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,7 +41,7 @@ const RoleGuard = ({
   }
 
   // If all checks pass, render the protected component
-  return <>{children}</>;
+  return children;
 };
 
 export default RoleGuard;

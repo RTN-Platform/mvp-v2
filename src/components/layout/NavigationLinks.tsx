@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Map, Users, Heart, MessageSquare, ListFilter, BarChart } from "lucide-react";
@@ -44,7 +43,7 @@ interface NavigationLinksProps {
 const NavigationLinks: React.FC<NavigationLinksProps> = ({ profile }) => {
   const location = useLocation();
   
-  // Don't render navigation links on admin routes
+  // Don't render navigation links on admin routes - check for any path starting with /admin
   if (location.pathname.startsWith('/admin')) {
     return null;
   }

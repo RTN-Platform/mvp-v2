@@ -37,49 +37,91 @@ import Messaging from "./pages/admin/Messaging";
 import { Toaster } from "./components/ui/toaster";
 import RoleGuard from "./components/auth/RoleGuard";
 import StorageInit from "./components/App/StorageInit";
+import MainLayout from "./components/layout/MainLayout";
 
 function App() {
   return (
     <>
       <StorageInit />
       <Routes>
-        <Route path="/" element={<Index />} />
+        {/* Main app routes with MainLayout */}
+        <Route path="/" element={<MainLayout><Index /></MainLayout>} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/edit-profile" element={<EditProfile />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/favorites" element={<Wishlist />} /> {/* Add alternate route for 'favorites' */}
-        <Route path="/favourites" element={<Wishlist />} /> {/* Add alternate route for 'favourites' with British spelling */}
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/become-host" element={<BecomeHost />} />
+        <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
+        <Route path="/edit-profile" element={<MainLayout><EditProfile /></MainLayout>} />
+        <Route path="/messages" element={<MainLayout><Messages /></MainLayout>} />
+        <Route path="/wishlist" element={<MainLayout><Wishlist /></MainLayout>} />
+        <Route path="/favorites" element={<MainLayout><Wishlist /></MainLayout>} />
+        <Route path="/favourites" element={<MainLayout><Wishlist /></MainLayout>} />
+        <Route path="/notifications" element={<MainLayout><Notifications /></MainLayout>} />
+        <Route path="/become-host" element={<MainLayout><BecomeHost /></MainLayout>} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/tribe" element={<Tribe />} />
-        <Route path="/member/:id" element={<MemberProfile />} />
-        <Route path="/create-listing" element={<CreateListing />} />
-        <Route path="/my-listings" element={<MyListings />} />
-        <Route path="/edit-listing/:type/:id" element={<EditListing />} />
-        <Route path="/accommodations/:id" element={<AccommodationDetail />} />
-        <Route path="/experiences/:id" element={<ExperienceDetail />} />
-        <Route path="/experiences" element={<Experiences />} />
-        <Route path="/create-update" element={<CreateUpdate />} />
+        <Route path="/tribe" element={<MainLayout><Tribe /></MainLayout>} />
+        <Route path="/member/:id" element={<MainLayout><MemberProfile /></MainLayout>} />
+        <Route path="/create-listing" element={<MainLayout><CreateListing /></MainLayout>} />
+        <Route path="/my-listings" element={<MainLayout><MyListings /></MainLayout>} />
+        <Route path="/edit-listing/:type/:id" element={<MainLayout><EditListing /></MainLayout>} />
+        <Route path="/accommodations/:id" element={<MainLayout><AccommodationDetail /></MainLayout>} />
+        <Route path="/experiences/:id" element={<MainLayout><ExperienceDetail /></MainLayout>} />
+        <Route path="/experiences" element={<MainLayout><Experiences /></MainLayout>} />
+        <Route path="/create-update" element={<MainLayout><CreateUpdate /></MainLayout>} />
 
-        {/* Admin Routes - These should NOT be wrapped by the main layout */}
-        <Route
-          path="/admin/*"
+        {/* Admin Routes - WITHOUT MainLayout wrapper */}
+        <Route 
+          path="/admin" 
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <Routes>
-                <Route index element={<Dashboard />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="users/:id" element={<UserProfileView />} />
-                <Route path="content" element={<ContentManagement />} />
-                <Route path="audit-logs" element={<AuditLogs />} />
-                <Route path="messaging" element={<Messaging />} />
-              </Routes>
+              <Dashboard />
             </RoleGuard>
-          }
+          } 
+        />
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <Dashboard />
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="/admin/users" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <UserManagement />
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="/admin/users/:id" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <UserProfileView />
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="/admin/content" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <ContentManagement />
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="/admin/audit-logs" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <AuditLogs />
+            </RoleGuard>
+          } 
+        />
+        <Route 
+          path="/admin/messaging" 
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <Messaging />
+            </RoleGuard>
+          } 
         />
 
         <Route path="*" element={<NotFound />} />

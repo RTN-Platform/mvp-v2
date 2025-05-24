@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ const Header: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const location = useLocation();
 
-  // Don't render header on admin routes
+  // Don't render header on admin routes - this should be the only check needed
   if (location.pathname.startsWith('/admin')) {
     return null;
   }

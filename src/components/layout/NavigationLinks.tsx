@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Map, Users, Heart, MessageSquare, ListFilter, BarChart } from "lucide-react";
@@ -41,13 +42,9 @@ interface NavigationLinksProps {
 }
 
 const NavigationLinks: React.FC<NavigationLinksProps> = ({ profile }) => {
-  const location = useLocation();
+  // Remove the admin route check since this component should only render on non-admin routes
+  // The parent Header component already handles this check
   
-  // Don't render navigation links on admin routes - check for any path starting with /admin
-  if (location.pathname.startsWith('/admin')) {
-    return null;
-  }
-
   return (
     <nav className="hidden md:flex items-center space-x-8 relative">
       <NavIcon icon={<Map size={24} />} label="EXPLORE" to="/experiences" />

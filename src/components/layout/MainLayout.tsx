@@ -22,7 +22,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
 
-  // Don't render MainLayout on admin routes
+  // Early return for admin routes - don't render MainLayout at all on admin routes
   if (location.pathname.startsWith('/admin')) {
     return null;
   }

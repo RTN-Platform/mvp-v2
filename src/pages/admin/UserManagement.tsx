@@ -90,124 +90,122 @@ const UserManagement: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div>
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-[400px]">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search users..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <UserPlus className="mr-2 h-4 w-4" /> Invite User
-            </Button>
-            <Button variant="destructive">
-              <UserX className="mr-2 h-4 w-4" /> Suspend User
-            </Button>
-          </div>
+      <div className="flex justify-between items-center mb-6">
+        <div className="relative w-[400px]">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search users..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-3 pl-4">Name</th>
-                    <th className="text-left pb-3">Username</th>
-                    <th className="text-left pb-3">Role</th>
-                    <th className="text-left pb-3">Joined</th>
-                    <th className="text-right pb-3 pr-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={5} className="text-center py-4">
-                        Loading users...
-                      </td>
-                    </tr>
-                  ) : filteredProfiles.length > 0 ? (
-                    filteredProfiles.map((profile) => (
-                      <tr key={profile.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 pl-4">
-                          <Link 
-                            to={`/admin/users/${profile.id}`} 
-                            className="font-medium text-blue-600 hover:underline"
-                          >
-                            {profile.full_name || "Unnamed User"}
-                          </Link>
-                        </td>
-                        <td className="py-3">@{profile.username || "no_username"}</td>
-                        <td className="py-3">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              profile.role === "admin"
-                                ? "bg-purple-100 text-purple-800"
-                                : profile.role === "host"
-                                ? "bg-blue-100 text-blue-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {profile.role}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          {new Date(profile.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 text-right pr-4">
-                          <div className="flex justify-end gap-2">
-                            <Link to={`/admin/users/${profile.id}`}>
-                              <Button size="sm" variant="ghost">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            
-                            {profile.role !== "admin" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => updateUserRole(profile.id, "admin")}
-                                title="Make admin"
-                              >
-                                <ShieldCheck className="h-4 w-4 text-purple-500" />
-                              </Button>
-                            )}
-                            
-                            {profile.role !== "host" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => updateUserRole(profile.id, "host")}
-                                title="Make host"
-                              >
-                                <ShieldCheck className="h-4 w-4 text-blue-500" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="text-center py-4">
-                        No users found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <UserPlus className="mr-2 h-4 w-4" /> Invite User
+          </Button>
+          <Button variant="destructive">
+            <UserX className="mr-2 h-4 w-4" /> Suspend User
+          </Button>
+        </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Platform Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left pb-3 pl-4">Name</th>
+                  <th className="text-left pb-3">Username</th>
+                  <th className="text-left pb-3">Role</th>
+                  <th className="text-left pb-3">Joined</th>
+                  <th className="text-right pb-3 pr-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      Loading users...
+                    </td>
+                  </tr>
+                ) : filteredProfiles.length > 0 ? (
+                  filteredProfiles.map((profile) => (
+                    <tr key={profile.id} className="border-b hover:bg-gray-50">
+                      <td className="py-3 pl-4">
+                        <Link 
+                          to={`/admin/users/${profile.id}`} 
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {profile.full_name || "Unnamed User"}
+                        </Link>
+                      </td>
+                      <td className="py-3">@{profile.username || "no_username"}</td>
+                      <td className="py-3">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            profile.role === "admin"
+                              ? "bg-purple-100 text-purple-800"
+                              : profile.role === "host"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {profile.role}
+                        </span>
+                      </td>
+                      <td className="py-3">
+                        {new Date(profile.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 text-right pr-4">
+                        <div className="flex justify-end gap-2">
+                          <Link to={`/admin/users/${profile.id}`}>
+                            <Button size="sm" variant="ghost">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          
+                          {profile.role !== "admin" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updateUserRole(profile.id, "admin")}
+                              title="Make admin"
+                            >
+                              <ShieldCheck className="h-4 w-4 text-purple-500" />
+                            </Button>
+                          )}
+                          
+                          {profile.role !== "host" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => updateUserRole(profile.id, "host")}
+                              title="Make host"
+                            >
+                              <ShieldCheck className="h-4 w-4 text-blue-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </AdminLayout>
   );
 };

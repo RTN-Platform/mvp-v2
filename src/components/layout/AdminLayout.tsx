@@ -41,11 +41,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Users className="mr-2 h-4 w-4" />
     },
     {
-      name: "Listing Management",
-      path: "/admin/content",
-      icon: <Home className="mr-2 h-4 w-4" />
-    },
-    {
       name: "Content Management",
       path: "/admin/content",
       icon: <FileText className="mr-2 h-4 w-4" />

@@ -66,7 +66,7 @@ function App() {
         <Route path="/experiences" element={<MainLayout><Experiences /></MainLayout>} />
         <Route path="/create-update" element={<MainLayout><CreateUpdate /></MainLayout>} />
 
-        {/* Admin Routes - WITH AdminLayout wrapper */}
+        {/* Admin Routes - ONLY AdminLayout (no MainLayout wrapper) */}
         <Route 
           path="/admin" 
           element={

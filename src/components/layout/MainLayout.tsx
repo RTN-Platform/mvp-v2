@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "./Header";
@@ -20,13 +19,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
-
-  // Don't render MainLayout for admin routes
-  const isAdminRoute = location.pathname.startsWith('/admin');
-  
-  if (isAdminRoute) {
-    return null;
-  }
 
   // Redirect from /notifications to /messages
   useEffect(() => {

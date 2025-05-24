@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Users, Home, FileText, MessageSquare, FileBarChart } from "lucide-react";
+import { ChevronDown, Users, FileText, MessageSquare, FileBarChart } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,13 +18,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import UserMenu from "@/components/layout/UserMenu";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -93,7 +94,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </Breadcrumb>
           </div>
           
-          <div>
+          <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
@@ -113,12 +114,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {user && <UserMenu user={user} profile={profile} signOut={signOut} />}
           </div>
         </div>
       </header>
       
       <div className="container mx-auto px-4 py-6 md:px-6">
-        {/* Main content area */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           {children}
         </div>

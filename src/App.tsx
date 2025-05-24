@@ -64,23 +64,23 @@ function App() {
         <Route path="/experiences" element={<Experiences />} />
         <Route path="/create-update" element={<CreateUpdate />} />
 
-        {/* Admin Routes */}
+        {/* Admin Routes - These should NOT be wrapped by the main layout */}
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <RoleGuard allowedRoles={["admin"]}>
-              <AdminDashboard />
+              <Routes>
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="users/:id" element={<UserProfileView />} />
+                <Route path="content" element={<ContentManagement />} />
+                <Route path="audit-logs" element={<AuditLogs />} />
+                <Route path="messaging" element={<Messaging />} />
+              </Routes>
             </RoleGuard>
           }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="users/:id" element={<UserProfileView />} />
-          <Route path="content" element={<ContentManagement />} />
-          <Route path="audit-logs" element={<AuditLogs />} />
-          <Route path="messaging" element={<Messaging />} />
-        </Route>
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
